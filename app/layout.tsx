@@ -1,4 +1,3 @@
-import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Archivo, Inter, Geist_Mono } from 'next/font/google'
 import { NavMenu } from '@/components/nav-menu'
@@ -57,7 +56,6 @@ export default function RootLayout({
           <NavMenu />
           {children}
         </CartProvider>
-        {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
   )
