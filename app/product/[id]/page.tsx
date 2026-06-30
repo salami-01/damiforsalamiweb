@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getProductById, formatPrice } from '@/lib/products'
 import { ProductDetailActions } from '@/components/product-detail-actions'
+import { ProductImageCarousel } from '@/components/product-image-carousel'
 import { SiteFooter } from '@/components/site-footer'
 
 import type { Metadata } from 'next'
@@ -39,13 +40,10 @@ export default async function ProductPage({
   return (
     <main className="min-h-screen bg-brand-graphite text-brand-bone">
       <section className="grid grid-cols-1 gap-12 px-6 pt-28 md:grid-cols-2 md:px-16 md:pt-36 lg:px-24">
-        <div className="overflow-hidden bg-brand-graphite">
-          <img
-            src={product.image || '/placeholder.svg'}
-            alt={`${product.name} in ${product.variant}`}
-            className="aspect-[4/5] w-full object-cover"
-          />
-        </div>
+        <ProductImageCarousel
+          images={product.images?.length > 0 ? product.images : [product.image]}
+          alt={`${product.name} in ${product.variant}`}
+        />
 
         <div className="flex flex-col">
           <h1 className="font-heading text-3xl font-black uppercase tracking-tight sm:text-4xl">
@@ -66,3 +64,4 @@ export default async function ProductPage({
     </main>
   )
 }
+//app/product/[id]/page.tsx

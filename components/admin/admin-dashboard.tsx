@@ -1,21 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { Package, ClipboardList, FileText, Mail, Users, Menu, X } from 'lucide-react'
+import { Package, ClipboardList, FileText, Mail, Users, Menu, X, Tags } from 'lucide-react'
 import { AdminProducts } from '@/components/admin/admin-products'
 import { AdminOrders } from '@/components/admin/admin-orders'
 import { AdminContent } from '@/components/admin/admin-content'
 import { AdminMessages } from '@/components/admin/admin-messages'
 import { AdminUsers } from '@/components/admin/admin-users'
+import { AdminCategories } from '@/components/admin/admin-categories'
 
-type Tab = 'products' | 'orders' | 'content' | 'messages' | 'users'
-
+type Tab = 'products' | 'orders' | 'content' | 'messages' | 'users' | 'categories'
 const NAV: { id: Tab; label: string; icon: typeof Package }[] = [
   { id: 'products', label: 'Products', icon: Package },
   { id: 'orders', label: 'Orders', icon: ClipboardList },
   { id: 'content', label: 'Content', icon: FileText },
   { id: 'messages', label: 'Messages', icon: Mail },
   { id: 'users', label: 'Users', icon: Users },
+  { id: 'categories', label: 'Categories', icon: Tags },
 ]
 
 export function AdminDashboard() {
@@ -105,6 +106,7 @@ export function AdminDashboard() {
         {tab === 'content' && <AdminContent />}
         {tab === 'messages' && <AdminMessages />}
         {tab === 'users' && <AdminUsers />}
+        {tab === 'categories' && <AdminCategories />}
       </main>
     </div>
   )

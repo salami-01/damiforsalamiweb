@@ -36,7 +36,7 @@ export function ProductCard({ product, index }: { product: Product; index: numbe
                 e.stopPropagation()
                 addItem(product)
               }}
-              className="absolute inset-x-0 bottom-0 translate-y-full bg-brand-bone py-4 font-mono text-[11px] uppercase tracking-[0.3em] text-brand-black opacity-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-y-0 group-hover:opacity-100"
+              className="absolute inset-x-0 bottom-0 bg-brand-bone py-3 font-mono text-[11px] uppercase tracking-[0.3em] text-brand-black transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:translate-y-full md:py-4 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100"
             >
               Add to cart
             </button>
@@ -58,3 +58,5 @@ export function ProductCard({ product, index }: { product: Product; index: numbe
     </motion.div>
   )
 }
+
+//components/product-card.tsx
