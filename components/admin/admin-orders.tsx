@@ -1,14 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
-import {
-  ORDERS,
-  ORDER_STATUSES,
-  type Order,
-  type OrderStatus,
-} from '@/lib/orders'
+import { createClient } from '@/lib/supabase/client'
 import { formatPrice } from '@/lib/products'
+import type { Order, OrderStatus } from '@/lib/orders'
+import { ORDER_STATUSES } from '@/lib/orders'
 
 const STATUS_STYLE: Record<OrderStatus, string> = {
   Processing: 'bg-secondary text-secondary-foreground',
@@ -23,10 +20,31 @@ function orderTotal(order: Order) {
 }
 
 export function AdminOrders() {
-  const [orders, setOrders] = useState<Order[]>(ORDERS)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
   const [active, setActive] = useState<Order | null>(null)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const supabase = createClient()
+
+  const loadOrders = useCallback(async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('date', { ascending: false })
+    if (error) {
+      console.error('Error loading orders:', error.message)
+      setOrders([])
+    } else {
+      setOrders((data ?? []) as Order[])
+    }
+    setLoading(false)
+  }, [supabase])
+
+  useEffect(() => {
+    loadOrders()
+  }, [loadOrders])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -48,9 +66,14 @@ export function AdminOrders() {
     setPage(1)
   }
 
-  function updateStatus(id: string, status: OrderStatus) {
+  async function updateStatus(id: string, status: OrderStatus) {
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)))
     setActive((prev) => (prev && prev.id === id ? { ...prev, status } : prev))
+    await supabase.from('orders').update({ status }).eq('id', id)
+  }
+
+  if (loading) {
+    return <p className="text-sm text-muted-foreground">Loading orders...</p>
   }
 
   return (
@@ -101,7 +124,7 @@ export function AdminOrders() {
             {paginated.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
-                  No orders match your search.
+                  {orders.length === 0 ? 'No orders yet.' : 'No orders match your search.'}
                 </td>
               </tr>
             ) : (
