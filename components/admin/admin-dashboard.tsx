@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Package, ClipboardList, FileText, Mail } from 'lucide-react'
+import { Package, ClipboardList, FileText, Mail, Users } from 'lucide-react'
 import { AdminProducts } from '@/components/admin/admin-products'
 import { AdminOrders } from '@/components/admin/admin-orders'
 import { AdminContent } from '@/components/admin/admin-content'

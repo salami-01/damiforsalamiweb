@@ -22,7 +22,7 @@ export default async function AccountPage() {
     .from('orders')
     .select('*')
     .eq('user_id', user.id)
-    .order('date', { ascending: false })
+    .order('created_at', { ascending: false })
 
   const orderList = (orders ?? []) as Order[]
   const name = user.user_metadata?.full_name as string | undefined
