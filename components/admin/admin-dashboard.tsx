@@ -6,14 +6,16 @@ import { AdminProducts } from '@/components/admin/admin-products'
 import { AdminOrders } from '@/components/admin/admin-orders'
 import { AdminContent } from '@/components/admin/admin-content'
 import { AdminMessages } from '@/components/admin/admin-messages'
+import { AdminUsers } from '@/components/admin/admin-users'
 
-type Tab = 'products' | 'orders' | 'content' | 'messages'
+type Tab = 'products' | 'orders' | 'content' | 'messages' | 'users'
 
 const NAV: { id: Tab; label: string; icon: typeof Package }[] = [
   { id: 'products', label: 'Products', icon: Package },
   { id: 'orders', label: 'Orders', icon: ClipboardList },
   { id: 'content', label: 'Content', icon: FileText },
   { id: 'messages', label: 'Messages', icon: Mail },
+  { id: 'users', label: 'Users', icon: Users },
 ]
 
 export function AdminDashboard() {
@@ -54,6 +56,7 @@ export function AdminDashboard() {
         {tab === 'orders' && <AdminOrders />}
         {tab === 'content' && <AdminContent />}
         {tab === 'messages' && <AdminMessages />}
+        {tab === 'users' && <AdminUsers />}
       </main>
     </div>
   )
