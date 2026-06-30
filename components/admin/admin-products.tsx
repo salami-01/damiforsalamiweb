@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Pencil, Trash2, Plus, X } from 'lucide-react'
+import { Pencil, Trash2, Plus, X, Upload } from 'lucide-react'
 import { formatPrice, type Product } from '@/lib/products'
 import { createClient } from '@/lib/supabase/client'
 
@@ -23,17 +23,15 @@ export function AdminProducts() {
   const [editing, setEditing] = useState<Product | null>(null)
   const [isNew, setIsNew] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
 
   const loadProducts = useCallback(async () => {
     setLoading(true)
     const { data, error } = await supabase.from('products').select('*').order('id')
-    if (error) {
-      setError(error.message)
-    } else {
-      setProducts((data ?? []) as Product[])
-    }
+    if (error) setError(error.message)
+    else setProducts((data ?? []) as Product[])
     setLoading(false)
   }, [supabase])
 
@@ -51,6 +49,29 @@ export function AdminProducts() {
     setEditing({ ...emptyDraft, id: `sm-${Math.floor(Math.random() * 9000) + 1000}` })
     setIsNew(true)
     setError(null)
+  }
+
+  async function handleImageUpload(file: File) {
+    if (!editing) return
+    setUploading(true)
+    setError(null)
+
+    const ext = file.name.split('.').pop()
+    const path = `${editing.id}-${Date.now()}.${ext}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('site-images')
+      .upload(path, file, { upsert: true })
+
+    if (uploadError) {
+      setError(uploadError.message)
+      setUploading(false)
+      return
+    }
+
+    const { data } = supabase.storage.from('site-images').getPublicUrl(path)
+    setEditing({ ...editing, image: data.publicUrl })
+    setUploading(false)
   }
 
   async function save() {
@@ -108,9 +129,7 @@ export function AdminProducts() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Products</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {products.length} items in the catalogue
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{products.length} items in the catalogue</p>
         </div>
         <button
           type="button"
@@ -122,9 +141,7 @@ export function AdminProducts() {
       </div>
 
       {error && (
-        <p className="mt-4 rounded-md bg-destructive/10 px-4 py-2 text-sm text-destructive">
-          {error}
-        </p>
+        <p className="mt-4 rounded-md bg-destructive/10 px-4 py-2 text-sm text-destructive">{error}</p>
       )}
 
       <div className="mt-6 overflow-hidden rounded-lg border border-border bg-card">
@@ -143,11 +160,7 @@ export function AdminProducts() {
               <tr key={p.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <img
-                      src={p.image || '/placeholder.svg'}
-                      alt=""
-                      className="h-10 w-9 rounded object-cover"
-                    />
+                    <img src={p.image || '/placeholder.svg'} alt="" className="h-10 w-9 rounded object-cover" />
                     <span className="font-medium">{p.name}</span>
                   </div>
                 </td>
@@ -186,9 +199,7 @@ export function AdminProducts() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">
-                {isNew ? 'Add product' : 'Edit product'}
-              </h3>
+              <h3 className="text-lg font-semibold">{isNew ? 'Add product' : 'Edit product'}</h3>
               <button
                 type="button"
                 onClick={() => setEditing(null)}
@@ -223,9 +234,7 @@ export function AdminProducts() {
                     type="number"
                     className={fieldClass}
                     value={editing.price}
-                    onChange={(e) =>
-                      setEditing({ ...editing, price: Number(e.target.value) })
-                    }
+                    onChange={(e) => setEditing({ ...editing, price: Number(e.target.value) })}
                   />
                 </label>
                 <label className="block">
@@ -234,21 +243,35 @@ export function AdminProducts() {
                     type="number"
                     className={fieldClass}
                     value={editing.stock}
-                    onChange={(e) =>
-                      setEditing({ ...editing, stock: Number(e.target.value) })
-                    }
+                    onChange={(e) => setEditing({ ...editing, stock: Number(e.target.value) })}
                   />
                 </label>
               </div>
-              <label className="block">
-                <span className="text-xs font-medium text-muted-foreground">Image path</span>
-                <input
-                  className={fieldClass}
-                  value={editing.image}
-                  placeholder="/products/your-image.png"
-                  onChange={(e) => setEditing({ ...editing, image: e.target.value })}
-                />
-              </label>
+
+              <div>
+                <span className="text-xs font-medium text-muted-foreground">Product image</span>
+                <div className="mt-2 flex items-center gap-3">
+                  <img
+                    src={editing.image || '/placeholder.svg'}
+                    alt=""
+                    className="h-16 w-14 rounded object-cover"
+                  />
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-secondary">
+                    <Upload className="h-3.5 w-3.5" />
+                    {uploading ? 'Uploading...' : 'Upload image'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleImageUpload(file)
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div className="mt-6 flex justify-end gap-3">
@@ -261,7 +284,7 @@ export function AdminProducts() {
               </button>
               <button
                 type="button"
-                disabled={saving}
+                disabled={saving || uploading}
                 onClick={save}
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >

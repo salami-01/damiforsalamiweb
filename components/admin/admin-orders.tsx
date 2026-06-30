@@ -24,6 +24,7 @@ export function AdminOrders() {
   const [loading, setLoading] = useState(true)
   const [active, setActive] = useState<Order | null>(null)
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'All'>('All')
   const [page, setPage] = useState(1)
   const supabase = createClient()
 
@@ -32,7 +33,7 @@ export function AdminOrders() {
     const { data, error } = await supabase
       .from('orders')
       .select('*')
-      .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
     if (error) {
       console.error('Error loading orders:', error.message)
       setOrders([])
@@ -47,12 +48,18 @@ export function AdminOrders() {
   }, [loadOrders])
 
   const filtered = useMemo(() => {
+    let result = orders
+    if (statusFilter !== 'All') {
+      result = result.filter((o) => o.status === statusFilter)
+    }
     const q = search.trim().toLowerCase()
-    if (!q) return orders
-    return orders.filter(
-      (o) => o.id.toLowerCase().includes(q) || o.customer.toLowerCase().includes(q),
-    )
-  }, [orders, search])
+    if (q) {
+      result = result.filter(
+        (o) => o.id.toLowerCase().includes(q) || o.customer.toLowerCase().includes(q),
+      )
+    }
+    return result
+  }, [orders, search, statusFilter])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
@@ -63,6 +70,11 @@ export function AdminOrders() {
 
   function handleSearchChange(value: string) {
     setSearch(value)
+    setPage(1)
+  }
+
+  function handleStatusFilterChange(value: OrderStatus | 'All') {
+    setStatusFilter(value)
     setPage(1)
   }
 
@@ -83,28 +95,42 @@ export function AdminOrders() {
           <h2 className="text-xl font-semibold">Orders</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {filtered.length} of {orders.length} orders
-            {search && ' matching search'}
           </p>
         </div>
 
-        <div className="relative w-full max-w-xs">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="Search by order ID or customer..."
-            className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-9 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => handleSearchChange('')}
-              aria-label="Clear search"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={statusFilter}
+            onChange={(e) => handleStatusFilterChange(e.target.value as OrderStatus | 'All')}
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="All">All statuses</option>
+            {ORDER_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+
+          <div className="relative w-full max-w-xs">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Search by order ID or customer..."
+              className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-9 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => handleSearchChange('')}
+                aria-label="Clear search"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -124,7 +150,7 @@ export function AdminOrders() {
             {paginated.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
-                  {orders.length === 0 ? 'No orders yet.' : 'No orders match your search.'}
+                  {orders.length === 0 ? 'No orders yet.' : 'No orders match.'}
                 </td>
               </tr>
             ) : (
@@ -208,24 +234,18 @@ export function AdminOrders() {
             </div>
 
             <div className="mt-6 space-y-1">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Customer
-              </p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Customer</p>
               <p className="font-medium">{active.customer}</p>
               <p className="text-sm text-muted-foreground">{active.email}</p>
             </div>
 
             <div className="mt-5 space-y-1">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Shipping
-              </p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Shipping</p>
               <p className="text-sm">{active.shipping}</p>
             </div>
 
             <div className="mt-5">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Status
-              </p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Status</p>
               <select
                 value={active.status}
                 onChange={(e) => updateStatus(active.id, e.target.value as OrderStatus)}
@@ -240,9 +260,7 @@ export function AdminOrders() {
             </div>
 
             <div className="mt-6">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Items
-              </p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Items</p>
               <ul className="mt-3 divide-y divide-border rounded-md border border-border">
                 {active.items.map((item, i) => (
                   <li key={i} className="flex justify-between px-4 py-3 text-sm">
