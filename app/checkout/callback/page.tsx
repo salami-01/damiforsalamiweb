@@ -100,7 +100,13 @@ export default async function CheckoutCallbackPage({
       .single()
 
     if (insertError || !inserted) {
-      return <FailureView message="Payment succeeded, but saving your order failed. Contact support with your reference." reference={reference} />
+      console.error('Order insert error:', insertError)
+      return (
+        <FailureView
+          message={`Payment succeeded, but saving your order failed: ${insertError?.message || 'Unknown error'}`}
+          reference={reference}
+        />
+      )
     }
 
     order = inserted
