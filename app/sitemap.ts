@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { getProducts } from '@/lib/products'
 
-const baseUrl = 'https://vercel.com/salami4lyf/damiforsalamiweb'
+const baseUrl = 'https://melodic-fairy-ab5ac8.netlify.app/'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await getProducts()

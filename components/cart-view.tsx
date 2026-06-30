@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Minus, Plus } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCart } from '@/components/cart-context'
@@ -8,6 +9,7 @@ import { formatPrice } from '@/lib/products'
 
 export function CartView() {
   const { items, count, subtotal, removeItem, setQuantity } = useCart()
+  const router = useRouter()
 
   return (
     <main className="min-h-screen bg-brand-slate text-brand-bone">
@@ -122,14 +124,15 @@ export function CartView() {
                   </div>
                 </dl>
                 <button
-                  type="button"
-                  className="mt-8 w-full bg-brand-red py-4 font-mono text-xs uppercase tracking-[0.3em] text-brand-bone transition-opacity duration-300 hover:opacity-90"
-                >
-                  Checkout
-                </button>
-                <p className="mt-4 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-brand-bone/35">
-                  Secure payment — coming soon
-                </p>
+                      type="button"
+                        onClick={() => router.push('/checkout')}
+                        className="mt-8 w-full bg-brand-red py-4 font-mono text-xs uppercase tracking-[0.3em] text-brand-bone transition-opacity duration-300 hover:opacity-90"
+                      >
+                        Checkout
+                    </button>
+                    <p className="mt-4 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-brand-bone/35">
+                        Secure payment via Paystack
+                    </p>
               </div>
             </aside>
           </div>
