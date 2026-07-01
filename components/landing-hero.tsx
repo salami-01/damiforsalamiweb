@@ -1,64 +1,71 @@
 'use client'
 
 import Link from 'next/link'
-import { useRef, useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'motion/react'
+import { supabase } from '@/lib/supabase'
+import type { SiteContent } from '@/lib/site-content'
 
 export function LandingHero() {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const [playCount, setPlayCount] = useState(0)
-  const [showFinalImage, setShowFinalImage] = useState(false)
+  const [index, setIndex] = useState(0)
+  const [images, setImages] = useState<string[]>(['/campaign/hero.png'])
+  const [intervalMs, setIntervalMs] = useState(4000)
 
-  function handleEnded() {
-    const next = playCount + 1
-    if (next >= 3) {
-      setShowFinalImage(true)
-    } else {
-      setPlayCount(next)
-      videoRef.current?.play()
-    }
-  }
+  useEffect(() => {
+    supabase
+      .from('site_content')
+      .select('content')
+      .eq('id', 1)
+      .single()
+      .then(({ data }) => {
+        const landing = (data?.content as SiteContent)?.landing
+        if (landing?.images?.length) setImages(landing.images)
+        if (landing?.intervalMs) setIntervalMs(landing.intervalMs)
+      })
+  }, [])
+
+  const next = useCallback(() => {
+    setIndex((i) => (i + 1) % images.length)
+  }, [images.length])
+
+  useEffect(() => {
+    if (images.length <= 1) return
+    const timer = setInterval(next, intervalMs)
+    return () => clearInterval(timer)
+  }, [next, images.length, intervalMs])
 
   return (
     <main className="relative h-[100svh] w-full overflow-hidden bg-brand-black">
-      {!showFinalImage ? (
-  <video
-    ref={videoRef}
-    autoPlay
-    muted
-    playsInline
-    onEnded={handleEnded}
-    poster="/campaign/hero.png"
-    className="absolute inset-0 h-full w-full object-cover"
-  >
-    <source src="/hero-video.mp4" type="video/mp4" />
-  </video>
-) : (
-  <>
-    <motion.img
-      src="/campaign/hero.png"
-      alt="Salami campaign film still"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 1.5 }}
-      className="absolute inset-0 h-full w-full object-cover brightness-125"
-    />
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 1.5, delay: 0.5 }}
-      className="absolute inset-0 flex items-center justify-center"
-    >
-      <img src="/logo.png" alt="Salami" className="w-64 sm:w-96" />
-    </motion.div>
-  </>
-)}
+      {images.map((src, i) => (
+        <motion.img
+          key={src}
+          src={src}
+          alt="Salami campaign"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: i === index ? 1 : 0 }}
+          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ))}
 
-      {/* Cinematic grading overlays — contrast only, no text content */}
       <div className="absolute inset-0 bg-gradient-to-b from-brand-black/70 via-brand-black/30 to-brand-black/80" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(0,0,0,0.75)_100%)]" />
 
-      {/* Only thing on screen besides the video */}
+      {images.length > 1 && (
+        <div className="absolute bottom-20 left-1/2 flex -translate-x-1/2 gap-2">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setIndex(i)}
+              className={`h-1.5 rounded-full transition-all ${
+                i === index ? 'w-5 bg-brand-bone' : 'w-1.5 bg-brand-bone/40'
+              }`}
+            />
+          ))}
+        </div>
+      )}
+
       <Link
         href="/home"
         aria-label="Enter the site"

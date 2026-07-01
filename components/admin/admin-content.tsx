@@ -321,6 +321,78 @@ export function AdminContent() {
             <input className={fieldClass} value={content.contact.tiktok} onChange={(e) => setContact('tiktok', e.target.value)} />
           </label>
         </section>
+        <section className="rounded-lg border border-border bg-card p-5">
+          <h3 className="text-sm font-semibold">Landing Page — Slideshow</h3>
+          <p className="mt-1 text-xs text-muted-foreground">Images shown on the landing page before "Enter" is clicked.</p>
+          <div className="mt-4 space-y-3">
+            {content.landing.images.map((img, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <img src={img} alt="" className="h-14 w-12 rounded object-cover" />
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-secondary">
+                  <Upload className="h-3.5 w-3.5" />
+                  {uploadingField === `landing-${i}` ? 'Uploading...' : 'Replace'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploadingField !== null}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) uploadImage(file, `landing-img-${i}`, (url) => {
+                        const newImages = [...content.landing.images]
+                        newImages[i] = url
+                        setContent({ ...content, landing: { ...content.landing, images: newImages } })
+                        setSaved(false)
+                      })
+                    }}
+                  />
+                </label>
+                {content.landing.images.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newImages = content.landing.images.filter((_, idx) => idx !== i)
+                      setContent({ ...content, landing: { ...content.landing, images: newImages } })
+                      setSaved(false)
+                    }}
+                    className="text-xs text-destructive hover:underline"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-secondary">
+              <Upload className="h-3.5 w-3.5" />
+              {uploadingField?.startsWith('landing-new') ? 'Uploading...' : 'Add image'}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploadingField !== null}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) uploadImage(file, `landing-new-${Date.now()}`, (url) => {
+                    setContent({ ...content, landing: { ...content.landing, images: [...content.landing.images, url] } })
+                    setSaved(false)
+                  })
+                }}
+              />
+            </label>
+          </div>
+          <label className="mt-4 block">
+            <span className="text-xs font-medium text-muted-foreground">Slide interval (ms)</span>
+            <input
+              type="number"
+              className={fieldClass}
+              value={content.landing.intervalMs}
+              onChange={(e) => {
+                setContent({ ...content, landing: { ...content.landing, intervalMs: Number(e.target.value) } })
+                setSaved(false)
+              }}
+            />
+          </label>
+        </section>
       </div>
     </form>
   )

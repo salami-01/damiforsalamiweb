@@ -39,6 +39,10 @@ export type SiteContent = {
     closingTagline: string
     closingHeading: string
   }
+  landing: {
+    images: string[]
+    intervalMs: number
+  }
 }
 
 export async function getSiteContent(): Promise<SiteContent | null> {

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { AuthChangeEvent, Session } from '@supabase/supabase-js'
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -13,13 +14,16 @@ export default function ResetPasswordPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+  const { data: listener } = supabase.auth.onAuthStateChange(
+    (event: AuthChangeEvent, session: Session | null) => {
       if (event === 'PASSWORD_RECOVERY') {
         setReady(true)
       }
-    })
-    return () => listener.subscription.unsubscribe()
-  }, [supabase])
+    }
+  )
+
+  return () => listener.subscription.unsubscribe()
+}, [supabase])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
