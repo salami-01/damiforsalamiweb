@@ -67,7 +67,7 @@ export function LandingHero() {
       )}
 
       <Link
-        href="/home"
+        href="/shop"
         aria-label="Enter the site"
         className="group absolute bottom-12 left-1/2 z-10 flex -translate-x-1/2 items-center gap-3 border border-brand-bone/50 bg-brand-black/40 px-8 py-4 backdrop-blur-sm transition-all duration-500 hover:border-brand-bone hover:bg-brand-bone hover:text-brand-black"
       >

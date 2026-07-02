@@ -14,7 +14,9 @@ const emptyDraft: Product = {
   variant: '',
   price: 0,
   image: '',
+  images: [],
   stock: 0,
+  category: null,
 }
 
 export function AdminProducts() {
@@ -23,7 +25,7 @@ export function AdminProducts() {
   const [editing, setEditing] = useState<Product | null>(null)
   const [isNew, setIsNew] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
+  const [uploading, setUploading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
 
@@ -51,13 +53,14 @@ export function AdminProducts() {
     setError(null)
   }
 
-  async function handleImageUpload(file: File) {
+  async function handleMultiImageUpload(file: File, index: number) {
     if (!editing) return
-    setUploading(true)
+    const slot = index === -1 ? 'new' : `img-${index}`
+    setUploading(slot)
     setError(null)
 
     const ext = file.name.split('.').pop()
-    const path = `${editing.id}-${Date.now()}.${ext}`
+    const path = `${editing.id}-${Date.now()}-${slot}.${ext}`
 
     const { error: uploadError } = await supabase.storage
       .from('site-images')
@@ -65,13 +68,27 @@ export function AdminProducts() {
 
     if (uploadError) {
       setError(uploadError.message)
-      setUploading(false)
+      setUploading(null)
       return
     }
 
     const { data } = supabase.storage.from('site-images').getPublicUrl(path)
-    setEditing({ ...editing, image: data.publicUrl })
-    setUploading(false)
+    const url = data.publicUrl
+    const currentImages = editing.images?.length > 0 ? editing.images : [editing.image].filter(Boolean)
+
+    let newImages: string[]
+    if (index === -1) {
+      newImages = [...currentImages, url]
+    } else {
+      newImages = currentImages.map((img, i) => (i === index ? url : img))
+    }
+
+    setEditing({
+      ...editing,
+      images: newImages,
+      image: newImages[0],
+    })
+    setUploading(null)
   }
 
   async function save() {
@@ -94,9 +111,11 @@ export function AdminProducts() {
           variant: editing.variant,
           price: editing.price,
           image: editing.image,
+          images: editing.images ?? [],
           stock: editing.stock,
         })
         .eq('id', editing.id)
+        
       if (error) {
         setError(error.message)
         setSaving(false)
@@ -249,24 +268,51 @@ export function AdminProducts() {
               </div>
 
               <div>
-                <span className="text-xs font-medium text-muted-foreground">Product image</span>
-                <div className="mt-2 flex items-center gap-3">
-                  <img
-                    src={editing.image || '/placeholder.svg'}
-                    alt=""
-                    className="h-16 w-14 rounded object-cover"
-                  />
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-secondary">
+                <span className="text-xs font-medium text-muted-foreground">Product images</span>
+                <p className="mt-1 text-[11px] text-muted-foreground">First image is the main thumbnail. Add more for the detail page carousel.</p>
+                <div className="mt-2 flex flex-col gap-3">
+                  {(editing.images?.length > 0 ? editing.images : [editing.image]).filter(Boolean).map((img, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <img src={img} alt="" className="h-16 w-14 rounded object-cover" />
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-secondary">
+                        <Upload className="h-3.5 w-3.5" />
+                        {uploading === `img-${i}` ? 'Uploading...' : 'Replace'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={!!uploading}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) handleMultiImageUpload(file, i)
+                          }}
+                        />
+                      </label>
+                      {(editing.images?.length > 1) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newImages = editing.images.filter((_, idx) => idx !== i)
+                            setEditing({ ...editing, images: newImages, image: newImages[0] || '' })
+                          }}
+                          className="text-xs text-destructive hover:underline"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-secondary">
                     <Upload className="h-3.5 w-3.5" />
-                    {uploading ? 'Uploading...' : 'Upload image'}
+                    {uploading === 'new' ? 'Uploading...' : 'Add another image'}
                     <input
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      disabled={uploading}
+                      disabled={!!uploading}
                       onChange={(e) => {
                         const file = e.target.files?.[0]
-                        if (file) handleImageUpload(file)
+                        if (file) handleMultiImageUpload(file, -1)
                       }}
                     />
                   </label>
@@ -284,7 +330,7 @@ export function AdminProducts() {
               </button>
               <button
                 type="button"
-                disabled={saving || uploading}
+                disabled={saving || uploading !== null}
                 onClick={save}
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >

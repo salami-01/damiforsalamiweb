@@ -10,9 +10,9 @@ export function ProductDetailActions({ product }: { product: Product }) {
   return (
     <div className="mt-8">
       {soldOut ? (
-        <p className="font-mono text-xs uppercase tracking-[0.3em] text-brand-bone/50">
-          Sold Out
-        </p>
+        <div className="mt-8 w-full border border-brand-bone/20 py-4 text-center font-mono text-xs uppercase tracking-[0.3em] text-brand-bone/50">
+        Out of Stock
+      </div>
       ) : (
         <button
           type="button"
