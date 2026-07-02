@@ -3,30 +3,52 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { AuthChangeEvent, Session } from '@supabase/supabase-js'
+import type { Session, AuthError } from '@supabase/supabase-js'
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
+  const [done, setDone] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
-  const { data: listener } = supabase.auth.onAuthStateChange(
-    (event: AuthChangeEvent, session: Session | null) => {
-      if (event === 'PASSWORD_RECOVERY') {
+    supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
+      const { session } = data
+      if (session) {
         setReady(true)
+        return
       }
-    }
-  )
 
-  return () => listener.subscription.unsubscribe()
-}, [supabase])
+      const hash = window.location.hash
+      if (hash.includes('type=recovery')) {
+        supabase.auth.exchangeCodeForSession(window.location.href).then(({ error }: { error: AuthError | null }) => {
+          if (error) {
+            setError('Reset link is invalid or has expired. Please request a new one.')
+          } else {
+            setReady(true)
+          }
+        })
+      } else {
+        const { data: listener } = supabase.auth.onAuthStateChange((event: string) => {
+          if (event === 'PASSWORD_RECOVERY') {
+            setReady(true)
+            listener.subscription.unsubscribe()
+          }
+        })
+      }
+    })
+  }, [supabase])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (password !== confirm) {
+      setError('Passwords do not match.')
+      return
+    }
     setLoading(true)
     setError(null)
 
@@ -37,8 +59,12 @@ export default function ResetPasswordPage() {
       setError(error.message)
       return
     }
-    router.push('/login')
+    setDone(true)
+    setTimeout(() => router.push('/shop'), 2500)
   }
+
+  const inputClass =
+    'w-full border-0 border-b border-brand-bone/25 bg-transparent py-3 text-sm text-brand-bone outline-none focus:border-brand-red'
 
   return (
     <main className="flex min-h-[100svh] w-full items-center justify-center bg-brand-slate px-6">
@@ -49,17 +75,40 @@ export default function ResetPasswordPage() {
 
         {error && <p className="mt-6 text-sm text-brand-red">{error}</p>}
 
-        {ready ? (
+        {done ? (
+          <div className="mt-10 rounded-md bg-emerald-500/15 px-4 py-4 text-sm text-emerald-400">
+            Password updated. Redirecting you to the shop...
+          </div>
+        ) : ready ? (
           <form onSubmit={handleSubmit} className="mt-10 flex flex-col gap-6">
-            <input
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="New password"
-              className="w-full border-0 border-b border-brand-bone/25 bg-transparent py-3 text-sm text-brand-bone outline-none focus:border-brand-red"
-            />
+            <div>
+              <label className="font-mono text-[10px] uppercase tracking-[0.3em] text-brand-bone/40">
+                New password
+              </label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="font-mono text-[10px] uppercase tracking-[0.3em] text-brand-bone/40">
+                Confirm password
+              </label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                placeholder="••••••••"
+                className={inputClass}
+              />
+            </div>
             <button
               type="submit"
               disabled={loading}

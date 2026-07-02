@@ -89,20 +89,22 @@ export function AuthPanels({ initialMode = 'signin' }: { initialMode?: 'signin' 
       router.refresh()
     } else {
   const next = searchParams.get('next')
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { full_name: name },
-      emailRedirectTo: `${window.location.origin}/login${next ? `?next=${encodeURIComponent(next)}` : ''}`,
-    },
-  })
+  const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name } },
+      })
       setLoading(false)
       if (error) {
         setError(error.message)
         return
       }
-      setMessage('Check your email to confirm your account before signing in.')
+      if (data.session) {
+        router.push(searchParams.get('next') || '/shop')
+        router.refresh()
+      } else {
+        setMessage('Check your email to confirm your account before signing in.')
+      }
     }
   }
 

@@ -71,14 +71,14 @@ export default async function AccountPage() {
 
                   <ul className="mt-5 divide-y divide-brand-bone/10">
                     {order.items.map((item, i) => (
-                      <li key={i} className="flex justify-between py-3 text-sm">
-                        <div>
-                          <p>{item.name}</p>
+                      <li key={i} className="flex flex-wrap justify-between gap-2 py-3 text-sm">
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words">{item.name}</p>
                           <p className="text-xs text-brand-bone/50">
-                            {item.variant} — Size {item.size} × {item.quantity}
+                          {item.variant} — Size {item.size} × {item.quantity}
                           </p>
                         </div>
-                        <span>{formatPrice(item.price * item.quantity)}</span>
+                        <span className="shrink-0">{formatPrice(item.price * item.quantity)}</span>
                       </li>
                     ))}
                   </ul>
@@ -98,3 +98,4 @@ export default async function AccountPage() {
     </main>
   )
 }
+//the name of the file is app\account\page.tsx
