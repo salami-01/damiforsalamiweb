@@ -163,7 +163,7 @@ export function AdminProducts() {
         <p className="mt-4 rounded-md bg-destructive/10 px-4 py-2 text-sm text-destructive">{error}</p>
       )}
 
-      <div className="mt-6 overflow-hidden rounded-lg border border-border bg-card">
+      <div className="mt-6 overflow-x-auto rounded-lg border border-border bg-card">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">

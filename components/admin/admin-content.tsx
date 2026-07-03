@@ -23,7 +23,7 @@ function ImageField({
     <div className="mt-4">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <div className="mt-2 flex items-center gap-3">
-        <img src={value} alt="" className="h-16 w-14 rounded object-cover" />
+        <img src={value || '/placeholder.svg'} alt="" className="h-16 w-14 rounded object-cover" />
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-secondary">
           <Upload className="h-3.5 w-3.5" />
           {uploading ? 'Uploading...' : 'Replace'}
@@ -53,19 +53,19 @@ export function AdminContent() {
   const supabase = createClient()
 
   useEffect(() => {
-  async function load() {
-    const { data, error } = await supabase
-      .from('site_content')
-      .select('content')
-      .eq('id', 1)
-      .single()
+    async function load() {
+      const { data, error } = await supabase
+        .from('site_content')
+        .select('content')
+        .eq('id', 1)
+        .single()
+      if (error) setError(error.message)
+      else setContent(data.content as SiteContent)
+      setLoading(false)
+    }
+    load()
+  }, [supabase])
 
-    if (error) setError(error.message)
-    else setContent(data.content as SiteContent)
-    setLoading(false)
-  }
-  load()
-}, [supabase])
   function setAbout<K extends keyof SiteContent['about']>(key: K, value: string) {
     if (!content) return
     setContent({ ...content, about: { ...content.about, [key]: value } })
@@ -84,29 +84,19 @@ export function AdminContent() {
     setSaved(false)
   }
 
-  function setHome<K extends keyof SiteContent['home']>(key: K, value: string) {
-    if (!content) return
-    setContent({ ...content, home: { ...content.home, [key]: value } })
-    setSaved(false)
-  }
-
   async function uploadImage(file: File, fieldKey: string, onDone: (url: string) => void) {
     setUploadingField(fieldKey)
     setError(null)
-
     const ext = file.name.split('.').pop()
     const path = `${fieldKey}-${Date.now()}.${ext}`
-
     const { error: uploadError } = await supabase.storage
       .from('site-images')
       .upload(path, file, { upsert: true })
-
     if (uploadError) {
       setError(uploadError.message)
       setUploadingField(null)
       return
     }
-
     const { data } = supabase.storage.from('site-images').getPublicUrl(path)
     onDone(data.publicUrl)
     setUploadingField(null)
@@ -117,12 +107,10 @@ export function AdminContent() {
     if (!content) return
     setSaving(true)
     setError(null)
-
     const { error } = await supabase
       .from('site_content')
       .update({ content })
       .eq('id', 1)
-
     setSaving(false)
     if (error) {
       setError(error.message)
@@ -140,7 +128,7 @@ export function AdminContent() {
         <div>
           <h2 className="text-xl font-semibold">Content Editor</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Edit Home, About, Terms, and Contact copy and images.
+            Edit landing slideshow, About, Terms, and Contact.
           </p>
         </div>
         <button
@@ -160,100 +148,97 @@ export function AdminContent() {
       )}
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <section className="rounded-lg border border-border bg-card p-5">
-          <h3 className="text-sm font-semibold">Home — Hero</h3>
-          <label className="mt-4 block">
-            <span className="text-xs font-medium text-muted-foreground">Tagline</span>
-            <input className={fieldClass} value={content.home.tagline} onChange={(e) => setHome('tagline', e.target.value)} />
-          </label>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">Headline line 1</span>
-              <input className={fieldClass} value={content.home.heroLine1} onChange={(e) => setHome('heroLine1', e.target.value)} />
-            </label>
-            <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">Headline line 2</span>
-              <input className={fieldClass} value={content.home.heroLine2} onChange={(e) => setHome('heroLine2', e.target.value)} />
-            </label>
+
+        {/* Landing slideshow */}
+        <section className="rounded-lg border border-border bg-card p-5 lg:col-span-2">
+          <h3 className="text-sm font-semibold">Landing Page — Slideshow</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Images shown on the landing page before "Enter" is clicked. First image shows immediately.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-4">
+            {(content.landing?.images ?? []).map((img, i) => (
+              <div key={i} className="flex flex-col items-center gap-2">
+                <img src={img} alt="" className="h-20 w-16 rounded object-cover" />
+                <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs font-medium hover:bg-secondary">
+                  <Upload className="h-3 w-3" />
+                  {uploadingField === `landing-img-${i}` ? '...' : 'Replace'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploadingField !== null}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) uploadImage(file, `landing-img-${i}`, (url) => {
+                        const newImages = [...(content.landing?.images ?? [])]
+                        newImages[i] = url
+                        setContent({ ...content, landing: { ...content.landing, images: newImages } })
+                        setSaved(false)
+                      })
+                    }}
+                  />
+                </label>
+                {(content.landing?.images?.length ?? 0) > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newImages = (content.landing?.images ?? []).filter((_, idx) => idx !== i)
+                      setContent({ ...content, landing: { ...content.landing, images: newImages } })
+                      setSaved(false)
+                    }}
+                    className="text-[11px] text-destructive hover:underline"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+            <div className="flex flex-col justify-center">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-xs font-medium hover:bg-secondary">
+                <Upload className="h-3.5 w-3.5" />
+                {uploadingField?.startsWith('landing-new') ? 'Uploading...' : 'Add image'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingField !== null}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) uploadImage(file, `landing-new-${Date.now()}`, (url) => {
+                      setContent({
+                        ...content,
+                        landing: {
+                          ...content.landing,
+                          images: [...(content.landing?.images ?? []), url],
+                        },
+                      })
+                      setSaved(false)
+                    })
+                  }}
+                />
+              </label>
+            </div>
           </div>
-          <label className="mt-4 block">
-            <span className="text-xs font-medium text-muted-foreground">Hero body text</span>
-            <textarea rows={3} className={`${fieldClass} resize-none`} value={content.home.heroBody} onChange={(e) => setHome('heroBody', e.target.value)} />
+          <label className="mt-4 block max-w-xs">
+            <span className="text-xs font-medium text-muted-foreground">
+              Slide interval (ms) — e.g. 4000 = 4 seconds
+            </span>
+            <input
+              type="number"
+              className={fieldClass}
+              value={content.landing?.intervalMs ?? 4000}
+              onChange={(e) => {
+                setContent({
+                  ...content,
+                  landing: { ...content.landing, intervalMs: Number(e.target.value) },
+                })
+                setSaved(false)
+              }}
+            />
           </label>
         </section>
 
-        <section className="rounded-lg border border-border bg-card p-5">
-          <h3 className="text-sm font-semibold">Home — Editorial 1</h3>
-          <label className="mt-4 block">
-            <span className="text-xs font-medium text-muted-foreground">Label</span>
-            <input className={fieldClass} value={content.home.editorial1Label} onChange={(e) => setHome('editorial1Label', e.target.value)} />
-          </label>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">Heading line 1</span>
-              <input className={fieldClass} value={content.home.editorial1HeadingLine1} onChange={(e) => setHome('editorial1HeadingLine1', e.target.value)} />
-            </label>
-            <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">Heading line 2</span>
-              <input className={fieldClass} value={content.home.editorial1HeadingLine2} onChange={(e) => setHome('editorial1HeadingLine2', e.target.value)} />
-            </label>
-          </div>
-          <label className="mt-4 block">
-            <span className="text-xs font-medium text-muted-foreground">Body</span>
-            <textarea rows={3} className={`${fieldClass} resize-none`} value={content.home.editorial1Body} onChange={(e) => setHome('editorial1Body', e.target.value)} />
-          </label>
-          <ImageField
-            label="Image"
-            value={content.home.editorial1Image}
-            uploading={uploadingField === 'home-editorial1Image'}
-            onUpload={(file) => uploadImage(file, 'home-editorial1Image', (url) => setHome('editorial1Image', url))}
-          />
-        </section>
-
-        <section className="rounded-lg border border-border bg-card p-5">
-          <h3 className="text-sm font-semibold">Home — Quote &amp; Editorial 2</h3>
-          <label className="mt-4 block">
-            <span className="text-xs font-medium text-muted-foreground">Pull quote</span>
-            <textarea rows={3} className={`${fieldClass} resize-none`} value={content.home.quote} onChange={(e) => setHome('quote', e.target.value)} />
-          </label>
-          <label className="mt-4 block">
-            <span className="text-xs font-medium text-muted-foreground">Editorial 2 — Label</span>
-            <input className={fieldClass} value={content.home.editorial2Label} onChange={(e) => setHome('editorial2Label', e.target.value)} />
-          </label>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">Heading line 1</span>
-              <input className={fieldClass} value={content.home.editorial2HeadingLine1} onChange={(e) => setHome('editorial2HeadingLine1', e.target.value)} />
-            </label>
-            <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">Heading line 2</span>
-              <input className={fieldClass} value={content.home.editorial2HeadingLine2} onChange={(e) => setHome('editorial2HeadingLine2', e.target.value)} />
-            </label>
-          </div>
-          <label className="mt-4 block">
-            <span className="text-xs font-medium text-muted-foreground">Body</span>
-            <textarea rows={3} className={`${fieldClass} resize-none`} value={content.home.editorial2Body} onChange={(e) => setHome('editorial2Body', e.target.value)} />
-          </label>
-          <ImageField
-            label="Image"
-            value={content.home.editorial2Image}
-            uploading={uploadingField === 'home-editorial2Image'}
-            onUpload={(file) => uploadImage(file, 'home-editorial2Image', (url) => setHome('editorial2Image', url))}
-          />
-        </section>
-
-        <section className="rounded-lg border border-border bg-card p-5">
-          <h3 className="text-sm font-semibold">Home — Closing</h3>
-          <label className="mt-4 block">
-            <span className="text-xs font-medium text-muted-foreground">Tagline</span>
-            <input className={fieldClass} value={content.home.closingTagline} onChange={(e) => setHome('closingTagline', e.target.value)} />
-          </label>
-          <label className="mt-4 block">
-            <span className="text-xs font-medium text-muted-foreground">Heading</span>
-            <input className={fieldClass} value={content.home.closingHeading} onChange={(e) => setHome('closingHeading', e.target.value)} />
-          </label>
-        </section>
-
+        {/* About */}
         <section className="rounded-lg border border-border bg-card p-5">
           <h3 className="text-sm font-semibold">About</h3>
           <label className="mt-4 block">
@@ -290,6 +275,7 @@ export function AdminContent() {
           />
         </section>
 
+        {/* Terms */}
         <section className="rounded-lg border border-border bg-card p-5">
           <h3 className="text-sm font-semibold">Terms</h3>
           <label className="mt-4 block">
@@ -302,6 +288,7 @@ export function AdminContent() {
           </label>
         </section>
 
+        {/* Contact */}
         <section className="rounded-lg border border-border bg-card p-5">
           <h3 className="text-sm font-semibold">Contact</h3>
           <label className="mt-4 block">
@@ -321,78 +308,7 @@ export function AdminContent() {
             <input className={fieldClass} value={content.contact.tiktok} onChange={(e) => setContact('tiktok', e.target.value)} />
           </label>
         </section>
-        <section className="rounded-lg border border-border bg-card p-5">
-          <h3 className="text-sm font-semibold">Landing Page — Slideshow</h3>
-          <p className="mt-1 text-xs text-muted-foreground">Images shown on the landing page before "Enter" is clicked.</p>
-          <div className="mt-4 space-y-3">
-            {content.landing.images.map((img, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <img src={img} alt="" className="h-14 w-12 rounded object-cover" />
-                <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-secondary">
-                  <Upload className="h-3.5 w-3.5" />
-                  {uploadingField === `landing-${i}` ? 'Uploading...' : 'Replace'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={uploadingField !== null}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) uploadImage(file, `landing-img-${i}`, (url) => {
-                        const newImages = [...content.landing.images]
-                        newImages[i] = url
-                        setContent({ ...content, landing: { ...content.landing, images: newImages } })
-                        setSaved(false)
-                      })
-                    }}
-                  />
-                </label>
-                {content.landing.images.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newImages = content.landing.images.filter((_, idx) => idx !== i)
-                      setContent({ ...content, landing: { ...content.landing, images: newImages } })
-                      setSaved(false)
-                    }}
-                    className="text-xs text-destructive hover:underline"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            ))}
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-medium hover:bg-secondary">
-              <Upload className="h-3.5 w-3.5" />
-              {uploadingField?.startsWith('landing-new') ? 'Uploading...' : 'Add image'}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                disabled={uploadingField !== null}
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) uploadImage(file, `landing-new-${Date.now()}`, (url) => {
-                    setContent({ ...content, landing: { ...content.landing, images: [...content.landing.images, url] } })
-                    setSaved(false)
-                  })
-                }}
-              />
-            </label>
-          </div>
-          <label className="mt-4 block">
-            <span className="text-xs font-medium text-muted-foreground">Slide interval (ms)</span>
-            <input
-              type="number"
-              className={fieldClass}
-              value={content.landing.intervalMs}
-              onChange={(e) => {
-                setContent({ ...content, landing: { ...content.landing, intervalMs: Number(e.target.value) } })
-                setSaved(false)
-              }}
-            />
-          </label>
-        </section>
+
       </div>
     </form>
   )
