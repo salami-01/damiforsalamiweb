@@ -121,7 +121,7 @@ export function AdminProducts() {
           category: editing.category ?? null,
         })
         .eq('id', editing.id)
-        
+
       if (error) {
         setError(error.message)
         setSaving(false)
@@ -222,20 +222,22 @@ export function AdminProducts() {
 
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">{isNew ? 'Add product' : 'Edit product'}</h3>
-              <button
-                type="button"
-                onClick={() => setEditing(null)}
-                aria-label="Close"
-                className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary"
-              >
-                <X className="h-4 w-4" />
-              </button>
+          <div className="flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-lg border border-border bg-card shadow-lg">
+            <div className="shrink-0 px-6 pt-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">{isNew ? 'Add product' : 'Edit product'}</h3>
+                <button
+                  type="button"
+                  onClick={() => setEditing(null)}
+                  aria-label="Close"
+                  className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
-            <div className="mt-5 space-y-4">
+            <div className="mt-5 flex-1 space-y-4 overflow-y-auto px-6 pb-2">
               <label className="block">
                 <span className="text-xs font-medium text-muted-foreground">Name</span>
                 <input
@@ -340,22 +342,24 @@ export function AdminProducts() {
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setEditing(null)}
-                className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-secondary"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={saving || uploading !== null}
-                onClick={save}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save'}
-              </button>
+            <div className="shrink-0 border-t border-border px-6 py-4">
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditing(null)}
+                  className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={saving || uploading !== null}
+                  onClick={save}
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
