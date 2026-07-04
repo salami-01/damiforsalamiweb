@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Pencil, Trash2, Plus, X, Upload } from 'lucide-react'
 import { formatPrice, type Product } from '@/lib/products'
 import { createClient } from '@/lib/supabase/client'
+import type { Category } from '@/lib/categories'
 
 const fieldClass =
   'w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring'
@@ -21,6 +22,7 @@ const emptyDraft: Product = {
 
 export function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Product | null>(null)
   const [isNew, setIsNew] = useState(false)
@@ -39,7 +41,10 @@ export function AdminProducts() {
 
   useEffect(() => {
     loadProducts()
-  }, [loadProducts])
+    supabase.from('categories').select('*').order('sort_order').then(({ data }: { data: Category[] | null }) => {
+      setCategories((data ?? []) as Category[])
+    })
+  }, [loadProducts, supabase])
 
   function startEdit(product: Product) {
     setEditing({ ...product })
@@ -113,6 +118,7 @@ export function AdminProducts() {
           image: editing.image,
           images: editing.images ?? [],
           stock: editing.stock,
+          category: editing.category ?? null,
         })
         .eq('id', editing.id)
         
@@ -266,7 +272,21 @@ export function AdminProducts() {
                   />
                 </label>
               </div>
-
+              <label className="block">
+                <span className="text-xs font-medium text-muted-foreground">Category</span>
+                <select
+                  className={fieldClass}
+                  value={editing.category ?? ''}
+                  onChange={(e) => setEditing({ ...editing, category: e.target.value || null })}
+                >
+                  <option value="">— No category —</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <div>
                 <span className="text-xs font-medium text-muted-foreground">Product images</span>
                 <p className="mt-1 text-[11px] text-muted-foreground">First image is the main thumbnail. Add more for the detail page carousel.</p>
@@ -343,4 +363,3 @@ export function AdminProducts() {
     </div>
   )
 }
-//this is components\admin\admin-products.tsx
