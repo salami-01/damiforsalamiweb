@@ -93,3 +93,4 @@ export default async function AboutPage() {
     </GradientScroll>
   )
 }
+//the name of the file is app\about\page.tsx

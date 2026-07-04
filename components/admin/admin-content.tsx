@@ -151,87 +151,162 @@ export function AdminContent() {
 
         {/* Landing slideshow */}
         <section className="rounded-lg border border-border bg-card p-5 lg:col-span-2">
-          <h3 className="text-sm font-semibold">Landing Page — Slideshow</h3>
+          <h3 className="text-sm font-semibold">Landing Page — Images</h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            Images shown on the landing page before "Enter" is clicked. First image shows immediately.
+            Upload separate sets for portrait (mobile) and landscape (desktop). If a set is empty, the general images are used as fallback.
           </p>
-          <div className="mt-4 flex flex-wrap gap-4">
-            {(content.landing?.images ?? []).map((img, i) => (
-              <div key={i} className="flex flex-col items-center gap-2">
-                <img src={img} alt="" className="h-20 w-16 rounded object-cover" />
-                <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs font-medium hover:bg-secondary">
-                  <Upload className="h-3 w-3" />
-                  {uploadingField === `landing-img-${i}` ? '...' : 'Replace'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={uploadingField !== null}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) uploadImage(file, `landing-img-${i}`, (url) => {
-                        const newImages = [...(content.landing?.images ?? [])]
-                        newImages[i] = url
-                        setContent({ ...content, landing: { ...content.landing, images: newImages } })
-                        setSaved(false)
-                      })
-                    }}
-                  />
-                </label>
-                {(content.landing?.images?.length ?? 0) > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => {
+
+          {/* General fallback images */}
+          <div className="mt-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">General (fallback)</p>
+            <div className="mt-3 flex flex-wrap gap-4">
+              {(content.landing?.images ?? []).map((img, i) => (
+                <div key={i} className="flex flex-col items-center gap-2">
+                  <img src={img} alt="" className="h-20 w-14 rounded object-cover" />
+                  <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs font-medium hover:bg-secondary">
+                    <Upload className="h-3 w-3" />
+                    {uploadingField === `landing-img-${i}` ? '...' : 'Replace'}
+                    <input type="file" accept="image/*" className="hidden" disabled={uploadingField !== null}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) uploadImage(file, `landing-img-${i}`, (url) => {
+                          const newImages = [...(content.landing?.images ?? [])]
+                          newImages[i] = url
+                          setContent({ ...content, landing: { ...content.landing, images: newImages } })
+                          setSaved(false)
+                        })
+                      }} />
+                  </label>
+                  {(content.landing?.images?.length ?? 0) > 1 && (
+                    <button type="button" onClick={() => {
                       const newImages = (content.landing?.images ?? []).filter((_, idx) => idx !== i)
                       setContent({ ...content, landing: { ...content.landing, images: newImages } })
                       setSaved(false)
-                    }}
-                    className="text-[11px] text-destructive hover:underline"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            ))}
-            <div className="flex flex-col justify-center">
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-xs font-medium hover:bg-secondary">
-                <Upload className="h-3.5 w-3.5" />
-                {uploadingField?.startsWith('landing-new') ? 'Uploading...' : 'Add image'}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={uploadingField !== null}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) uploadImage(file, `landing-new-${Date.now()}`, (url) => {
-                      setContent({
-                        ...content,
-                        landing: {
-                          ...content.landing,
-                          images: [...(content.landing?.images ?? []), url],
-                        },
+                    }} className="text-[11px] text-destructive hover:underline">Remove</button>
+                  )}
+                </div>
+              ))}
+              <div className="flex items-center">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-xs font-medium hover:bg-secondary">
+                  <Upload className="h-3.5 w-3.5" />
+                  {uploadingField?.startsWith('landing-new') ? '...' : 'Add'}
+                  <input type="file" accept="image/*" className="hidden" disabled={uploadingField !== null}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) uploadImage(file, `landing-new-${Date.now()}`, (url) => {
+                        setContent({ ...content, landing: { ...content.landing, images: [...(content.landing?.images ?? []), url] } })
+                        setSaved(false)
                       })
-                      setSaved(false)
-                    })
-                  }}
-                />
-              </label>
+                    }} />
+                </label>
+              </div>
             </div>
           </div>
-          <label className="mt-4 block max-w-xs">
-            <span className="text-xs font-medium text-muted-foreground">
-              Slide interval (ms) — e.g. 4000 = 4 seconds
-            </span>
+
+          {/* Portrait images */}
+          <div className="mt-6 border-t border-border pt-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Portrait / Mobile</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">Shown on phones and any screen taller than it is wide.</p>
+            <div className="mt-3 flex flex-wrap gap-4">
+              {(content.landing?.portraitImages ?? []).map((img, i) => (
+                <div key={i} className="flex flex-col items-center gap-2">
+                  <img src={img} alt="" className="h-20 w-14 rounded object-cover" />
+                  <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs font-medium hover:bg-secondary">
+                    <Upload className="h-3 w-3" />
+                    {uploadingField === `portrait-${i}` ? '...' : 'Replace'}
+                    <input type="file" accept="image/*" className="hidden" disabled={uploadingField !== null}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) uploadImage(file, `portrait-${i}-${Date.now()}`, (url) => {
+                          const imgs = [...(content.landing?.portraitImages ?? [])]
+                          imgs[i] = url
+                          setContent({ ...content, landing: { ...content.landing, portraitImages: imgs } })
+                          setSaved(false)
+                        })
+                      }} />
+                  </label>
+                  {(content.landing?.portraitImages?.length ?? 0) > 0 && (
+                    <button type="button" onClick={() => {
+                      const imgs = (content.landing?.portraitImages ?? []).filter((_, idx) => idx !== i)
+                      setContent({ ...content, landing: { ...content.landing, portraitImages: imgs } })
+                      setSaved(false)
+                    }} className="text-[11px] text-destructive hover:underline">Remove</button>
+                  )}
+                </div>
+              ))}
+              <div className="flex items-center">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-xs font-medium hover:bg-secondary">
+                  <Upload className="h-3.5 w-3.5" />
+                  {uploadingField?.startsWith('portrait-new') ? '...' : 'Add portrait'}
+                  <input type="file" accept="image/*" className="hidden" disabled={uploadingField !== null}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) uploadImage(file, `portrait-new-${Date.now()}`, (url) => {
+                        setContent({ ...content, landing: { ...content.landing, portraitImages: [...(content.landing?.portraitImages ?? []), url] } })
+                        setSaved(false)
+                      })
+                    }} />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Landscape images */}
+          <div className="mt-6 border-t border-border pt-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Landscape / Desktop</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">Shown on desktops, laptops, and any screen wider than it is tall.</p>
+            <div className="mt-3 flex flex-wrap gap-4">
+              {(content.landing?.landscapeImages ?? []).map((img, i) => (
+                <div key={i} className="flex flex-col items-center gap-2">
+                  <img src={img} alt="" className="h-14 w-20 rounded object-cover" />
+                  <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs font-medium hover:bg-secondary">
+                    <Upload className="h-3 w-3" />
+                    {uploadingField === `landscape-${i}` ? '...' : 'Replace'}
+                    <input type="file" accept="image/*" className="hidden" disabled={uploadingField !== null}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) uploadImage(file, `landscape-${i}-${Date.now()}`, (url) => {
+                          const imgs = [...(content.landing?.landscapeImages ?? [])]
+                          imgs[i] = url
+                          setContent({ ...content, landing: { ...content.landing, landscapeImages: imgs } })
+                          setSaved(false)
+                        })
+                      }} />
+                  </label>
+                  {(content.landing?.landscapeImages?.length ?? 0) > 0 && (
+                    <button type="button" onClick={() => {
+                      const imgs = (content.landing?.landscapeImages ?? []).filter((_, idx) => idx !== i)
+                      setContent({ ...content, landing: { ...content.landing, landscapeImages: imgs } })
+                      setSaved(false)
+                    }} className="text-[11px] text-destructive hover:underline">Remove</button>
+                  )}
+                </div>
+              ))}
+              <div className="flex items-center">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border px-3 py-2 text-xs font-medium hover:bg-secondary">
+                  <Upload className="h-3.5 w-3.5" />
+                  {uploadingField?.startsWith('landscape-new') ? '...' : 'Add landscape'}
+                  <input type="file" accept="image/*" className="hidden" disabled={uploadingField !== null}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) uploadImage(file, `landscape-new-${Date.now()}`, (url) => {
+                        setContent({ ...content, landing: { ...content.landing, landscapeImages: [...(content.landing?.landscapeImages ?? []), url] } })
+                        setSaved(false)
+                      })
+                    }} />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <label className="mt-6 block max-w-xs border-t border-border pt-5">
+            <span className="text-xs font-medium text-muted-foreground">Slide interval (ms) — e.g. 4000 = 4 seconds</span>
             <input
               type="number"
               className={fieldClass}
               value={content.landing?.intervalMs ?? 4000}
               onChange={(e) => {
-                setContent({
-                  ...content,
-                  landing: { ...content.landing, intervalMs: Number(e.target.value) },
-                })
+                setContent({ ...content, landing: { ...content.landing, intervalMs: Number(e.target.value) } })
                 setSaved(false)
               }}
             />
@@ -313,3 +388,4 @@ export function AdminContent() {
     </form>
   )
 }
+//this is the name of the file: components/admin/admin-content.tsx

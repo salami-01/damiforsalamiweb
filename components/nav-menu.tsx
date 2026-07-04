@@ -85,7 +85,7 @@ export function NavMenu() {
       <Link
   href="/home"
   aria-label="Salami home"
-  className="fixed left-1/2 top-5 z-[55] -translate-x-1/2 md:top-7"
+  className="absolute left-1/2 top-5 z-[55] -translate-x-1/2 md:top-7"
 >
   <img src="/logo.png" alt="Salami" className="h-8 w-auto md:h-10" />
 </Link>

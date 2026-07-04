@@ -41,6 +41,8 @@ export type SiteContent = {
   }
   landing: {
     images: string[]
+    portraitImages: string[]
+    landscapeImages: string[]
     intervalMs: number
   }
 }
