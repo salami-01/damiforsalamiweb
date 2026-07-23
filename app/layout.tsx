@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Archivo, Inter, Geist_Mono } from 'next/font/google'
 import { NavMenu } from '@/components/nav-menu'
 import { CartProvider } from '@/components/cart-context'
+import { WishlistProvider } from '@/components/wishlist-context'
 import './globals.css'
 
 const archivo = Archivo({
@@ -53,8 +54,10 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased">
         <CartProvider>
-          <NavMenu />
-          {children}
+          <WishlistProvider>
+            <NavMenu />
+            {children}
+          </WishlistProvider>
         </CartProvider>
       </body>
     </html>
