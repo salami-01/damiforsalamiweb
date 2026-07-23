@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Pencil, Trash2, Plus, X, Upload } from 'lucide-react'
-import { formatPrice, type Product } from '@/lib/products'
+import { formatPrice, getPromoInfo, SIZE_OPTIONS, type Product } from '@/lib/products'
 import { createClient } from '@/lib/supabase/client'
 import type { Category } from '@/lib/categories'
 
@@ -14,10 +14,27 @@ const emptyDraft: Product = {
   name: '',
   variant: '',
   price: 0,
+  compareAtPrice: null,
+  promoEndsAt: null,
   image: '',
   images: [],
   stock: 0,
   category: null,
+  sizes: [],
+  badges: [],
+}
+
+/** datetime-local inputs want "YYYY-MM-DDTHH:mm" in local time, not UTC. */
+function isoToLocalInput(iso: string | null) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+  return local.toISOString().slice(0, 16)
+}
+
+function localInputToIso(value: string): string | null {
+  if (!value) return null
+  return new Date(value).toISOString()
 }
 
 export function AdminProducts() {
@@ -29,13 +46,24 @@ export function AdminProducts() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [badgesInput, setBadgesInput] = useState('')
   const supabase = createClient()
 
   const loadProducts = useCallback(async () => {
     setLoading(true)
     const { data, error } = await supabase.from('products').select('*').order('id')
     if (error) setError(error.message)
-    else setProducts((data ?? []) as Product[])
+    else {
+      setProducts(
+        (data ?? []).map((p: any) => ({
+          ...p,
+          compareAtPrice: p.compareAtPrice ?? null,
+          promoEndsAt: p.promoEndsAt ?? null,
+          sizes: p.sizes ?? [],
+          badges: p.badges ?? [],
+        })) as Product[],
+      )
+    }
     setLoading(false)
   }, [supabase])
 
@@ -47,15 +75,26 @@ export function AdminProducts() {
   }, [loadProducts, supabase])
 
   function startEdit(product: Product) {
-    setEditing({ ...product })
+    setEditing({ ...product, sizes: [...product.sizes], badges: [...product.badges] })
+    setBadgesInput(product.badges.join(', '))
     setIsNew(false)
     setError(null)
   }
 
   function startNew() {
     setEditing({ ...emptyDraft, id: `sm-${Math.floor(Math.random() * 9000) + 1000}` })
+    setBadgesInput('')
     setIsNew(true)
     setError(null)
+  }
+
+  function toggleSize(s: string) {
+    if (!editing) return
+    const has = editing.sizes.includes(s)
+    setEditing({
+      ...editing,
+      sizes: has ? editing.sizes.filter((x) => x !== s) : [...editing.sizes, s],
+    })
   }
 
   async function handleMultiImageUpload(file: File, index: number) {
@@ -101,26 +140,40 @@ export function AdminProducts() {
     setSaving(true)
     setError(null)
 
+    const badges = badgesInput
+      .split(',')
+      .map((b) => b.trim())
+      .filter(Boolean)
+
+    if (editing.compareAtPrice !== null && editing.compareAtPrice <= editing.price) {
+      setError('Compare-at price must be higher than the current price for a promo to show.')
+      setSaving(false)
+      return
+    }
+
+    const payload = {
+      name: editing.name,
+      variant: editing.variant,
+      price: editing.price,
+      compareAtPrice: editing.compareAtPrice,
+      promoEndsAt: editing.promoEndsAt,
+      image: editing.image,
+      images: editing.images ?? [],
+      stock: editing.stock,
+      category: editing.category ?? null,
+      sizes: editing.sizes ?? [],
+      badges,
+    }
+
     if (isNew) {
-      const { error } = await supabase.from('products').insert(editing)
+      const { error } = await supabase.from('products').insert({ id: editing.id, ...payload })
       if (error) {
         setError(error.message)
         setSaving(false)
         return
       }
     } else {
-      const { error } = await supabase
-        .from('products')
-        .update({
-          name: editing.name,
-          variant: editing.variant,
-          price: editing.price,
-          image: editing.image,
-          images: editing.images ?? [],
-          stock: editing.stock,
-          category: editing.category ?? null,
-        })
-        .eq('id', editing.id)
+      const { error } = await supabase.from('products').update(payload).eq('id', editing.id)
 
       if (error) {
         setError(error.message)
@@ -176,46 +229,59 @@ export function AdminProducts() {
               <th className="px-4 py-3 font-medium">Product</th>
               <th className="px-4 py-3 font-medium">Variant</th>
               <th className="px-4 py-3 font-medium">Price</th>
+              <th className="px-4 py-3 font-medium">Promo</th>
               <th className="px-4 py-3 font-medium">Stock</th>
               <th className="px-4 py-3 text-right font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {products.map((p) => (
-              <tr key={p.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <img src={p.image || '/placeholder.svg'} alt="" className="h-10 w-9 rounded object-cover" />
-                    <span className="font-medium">{p.name}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">{p.variant}</td>
-                <td className="px-4 py-3">{formatPrice(p.price)}</td>
-                <td className="px-4 py-3">
-                  <span className={p.stock === 0 ? 'text-primary' : ''}>{p.stock}</span>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-1">
-                    <button
-                      type="button"
-                      onClick={() => startEdit(p)}
-                      aria-label={`Edit ${p.name}`}
-                      className="rounded-md p-2 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => remove(p.id)}
-                      aria-label={`Delete ${p.name}`}
-                      className="rounded-md p-2 text-muted-foreground hover:bg-secondary hover:text-primary"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {products.map((p) => {
+              const { isPromo, percentOff } = getPromoInfo(p)
+              return (
+                <tr key={p.id} className="border-b border-border last:border-0">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <img src={p.image || '/placeholder.svg'} alt="" className="h-10 w-9 rounded object-cover" />
+                      <span className="font-medium">{p.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.variant}</td>
+                  <td className="px-4 py-3">{formatPrice(p.price)}</td>
+                  <td className="px-4 py-3">
+                    {isPromo ? (
+                      <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs text-emerald-800">
+                        -{percentOff}%
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={p.stock === 0 ? 'text-primary' : ''}>{p.stock}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-1">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(p)}
+                        aria-label={`Edit ${p.name}`}
+                        className="rounded-md p-2 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(p.id)}
+                        aria-label={`Delete ${p.name}`}
+                        className="rounded-md p-2 text-muted-foreground hover:bg-secondary hover:text-primary"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -274,6 +340,53 @@ export function AdminProducts() {
                   />
                 </label>
               </div>
+
+              <div className="rounded-md border border-dashed border-border p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Promo (optional)
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-4">
+                  <label className="block">
+                    <span className="text-xs font-medium text-muted-foreground">Compare-at price (₦)</span>
+                    <input
+                      type="number"
+                      placeholder="e.g. 40000"
+                      className={fieldClass}
+                      value={editing.compareAtPrice ?? ''}
+                      onChange={(e) =>
+                        setEditing({
+                          ...editing,
+                          compareAtPrice: e.target.value === '' ? null : Number(e.target.value),
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs font-medium text-muted-foreground">Promo ends</span>
+                    <input
+                      type="datetime-local"
+                      className={fieldClass}
+                      value={isoToLocalInput(editing.promoEndsAt)}
+                      onChange={(e) =>
+                        setEditing({ ...editing, promoEndsAt: localInputToIso(e.target.value) })
+                      }
+                    />
+                  </label>
+                </div>
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  Set a compare-at price higher than the current price to show this item as a promo on the
+                  shop and /promo page. Leave the countdown blank if the discount isn't time-limited.
+                </p>
+                {(() => {
+                  const { isPromo, percentOff } = getPromoInfo(editing)
+                  return isPromo ? (
+                    <p className="mt-2 text-xs font-medium text-emerald-700">
+                      Will display as -{percentOff}% off
+                    </p>
+                  ) : null
+                })()}
+              </div>
+
               <label className="block">
                 <span className="text-xs font-medium text-muted-foreground">Category</span>
                 <select
@@ -289,6 +402,43 @@ export function AdminProducts() {
                   ))}
                 </select>
               </label>
+
+              <div>
+                <span className="text-xs font-medium text-muted-foreground">Available sizes</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {SIZE_OPTIONS.map((s) => {
+                    const active = editing.sizes.includes(s)
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => toggleSize(s)}
+                        className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                          active
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-input text-foreground hover:bg-secondary'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Leave all unselected for a single "One Size" item.
+                </p>
+              </div>
+
+              <label className="block">
+                <span className="text-xs font-medium text-muted-foreground">Badges (comma separated)</span>
+                <input
+                  className={fieldClass}
+                  placeholder="e.g. Female Gown, Limited"
+                  value={badgesInput}
+                  onChange={(e) => setBadgesInput(e.target.value)}
+                />
+              </label>
+
               <div>
                 <span className="text-xs font-medium text-muted-foreground">Product images</span>
                 <p className="mt-1 text-[11px] text-muted-foreground">First image is the main thumbnail. Add more for the detail page carousel.</p>

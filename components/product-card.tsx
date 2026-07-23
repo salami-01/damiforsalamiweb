@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { motion } from 'motion/react'
-import { type Product, formatPrice } from '@/lib/products'
+import { type Product, formatPrice, getPromoInfo } from '@/lib/products'
 import { useCart } from '@/components/cart-context'
 
 export function ProductCard({ product, index }: { product: Product; index: number }) {
   const { addItem } = useCart()
   const soldOut = product.stock === 0
+  const { isPromo, percentOff } = getPromoInfo(product)
 
   return (
     <motion.div
@@ -19,6 +20,11 @@ export function ProductCard({ product, index }: { product: Product; index: numbe
     >
       <Link href={`/product/${product.id}`} className="contents">
         <div className="relative overflow-hidden bg-brand-graphite">
+          {isPromo && (
+            <span className="absolute left-2 top-2 z-10 rounded-sm bg-emerald-500 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-black">
+              -{percentOff}% off
+            </span>
+          )}
           <img
             src={product.image || '/placeholder.svg'}
             alt={`${product.name} in ${product.variant}`}
@@ -50,9 +56,20 @@ export function ProductCard({ product, index }: { product: Product; index: numbe
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-bone/45">
             {product.variant}
           </p>
-          <p className="mt-1 font-heading text-sm font-bold text-brand-red sm:text-base">
-            {formatPrice(product.price)}
-          </p>
+          {isPromo ? (
+            <div className="mt-1 flex items-center gap-2">
+              <p className="font-heading text-sm font-bold text-brand-red sm:text-base">
+                {formatPrice(product.price)}
+              </p>
+              <p className="font-mono text-xs text-brand-bone/40 line-through">
+                {formatPrice(product.compareAtPrice!)}
+              </p>
+            </div>
+          ) : (
+            <p className="mt-1 font-heading text-sm font-bold text-brand-red sm:text-base">
+              {formatPrice(product.price)}
+            </p>
+          )}
         </div>
       </Link>
     </motion.div>

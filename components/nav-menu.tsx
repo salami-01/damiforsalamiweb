@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 
 const BASE_LINKS = [
   { label: 'Open Shop', href: '/shop' },
+  { label: 'Promo', href: '/promo' },
   { label: 'About', href: '/about' },
   { label: 'Terms and Conditions', href: '/terms' },
   { label: 'Your Cart', href: '/cart' },
@@ -42,7 +43,7 @@ export function NavMenu() {
   }
 
   const links = user
-  ? [...BASE_LINKS, { label: 'My Account', href: '/account' }, { label: 'Log Out', href: '#', isLogout: true }]
+  ? [...BASE_LINKS, { label: 'Wishlist', href: '/wishlist' }, { label: 'My Account', href: '/account' }, { label: 'Log Out', href: '#', isLogout: true }]
   : [...BASE_LINKS, { label: 'Login Page', href: `/login?next=${encodeURIComponent(pathname || '/')}` }]
   async function handleLogout() {
     await supabase.auth.signOut()

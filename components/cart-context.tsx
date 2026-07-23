@@ -12,7 +12,8 @@ import {
 } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { AnimatePresence, motion } from 'motion/react'
-import { type Product } from '@/lib/products'
+import { ShoppingBag } from 'lucide-react'
+import { type Product, getCheckoutPrice } from '@/lib/products'
 import { createClient } from '@/lib/supabase/client'
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
 
@@ -29,13 +30,61 @@ type CartContextValue = {
   count: number
   subtotal: number
   loading: boolean
-  addItem: (product: Product, size?: string) => void
+  addItem: (product: Product, size?: string, quantity?: number) => void
   removeItem: (id: string, size: string) => void
   setQuantity: (id: string, size: string, quantity: number) => void
   user: User | null
 }
 
 const CartContext = createContext<CartContextValue | null>(null)
+
+const CART_HIDDEN_PREFIXES = ['/admin', '/login', '/signup', '/checkout']
+
+function FloatingCartButton({ count }: { count: number }) {
+  const pathname = usePathname()
+  const router = useRouter()
+  const [bump, setBump] = useState(false)
+  const prevCount = useRef(count)
+
+  useEffect(() => {
+    if (count > prevCount.current) {
+      setBump(true)
+      const t = setTimeout(() => setBump(false), 400)
+      prevCount.current = count
+      return () => clearTimeout(t)
+    }
+    prevCount.current = count
+  }, [count])
+
+  const hidden =
+    pathname === '/' ||
+    CART_HIDDEN_PREFIXES.some((p) => pathname?.startsWith(p))
+
+  if (hidden) return null
+
+  return (
+    <AnimatePresence>
+      {count > 0 && (
+        <motion.button
+          key="floating-cart"
+          type="button"
+          onClick={() => router.push('/cart')}
+          aria-label={`View cart, ${count} item${count === 1 ? '' : 's'}`}
+          initial={{ opacity: 0, scale: 0.5, y: 20 }}
+          animate={{ opacity: 1, scale: bump ? 1.15 : 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.5, y: 20 }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-red text-brand-bone shadow-lg shadow-black/40 transition-transform hover:scale-105"
+        >
+          <ShoppingBag className="h-6 w-6" />
+          <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-brand-bone px-1.5 font-mono text-[11px] font-bold text-brand-black">
+            {count}
+          </span>
+        </motion.button>
+      )}
+    </AnimatePresence>
+  )
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
@@ -108,7 +157,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }
 
   const addItem = useCallback(
-    async (product: Product, size = 'M') => {
+    async (product: Product, size = 'M', quantity = 1) => {
       if (!user) {
         router.push(`/login?next=${encodeURIComponent(pathname)}`)
         return
@@ -120,29 +169,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
 
       const existing = items.find((i) => i.product.id === product.id && i.size === size)
+      const currentQty = existing?.quantity ?? 0
 
-      if (existing && existing.quantity >= product.stock) {
+      if (currentQty >= product.stock) {
         pushToast(product, size, 'limit')
         return
       }
+
+      const requestedTotal = currentQty + quantity
+      const newQuantity = Math.min(requestedTotal, product.stock)
+      const wasClamped = newQuantity < requestedTotal
 
       setItems((prev) => {
         if (existing) {
           return prev.map((i) =>
             i.product.id === product.id && i.size === size
-              ? { ...i, quantity: i.quantity + 1 }
+              ? { ...i, quantity: newQuantity }
               : i,
           )
         }
-        return [...prev, { product, size, quantity: 1 }]
+        return [...prev, { product, size, quantity: newQuantity }]
       })
 
-      pushToast(product, size, 'added')
+      pushToast(product, size, wasClamped ? 'limit' : 'added')
 
       if (existing) {
         await supabase
           .from('cart_items')
-          .update({ quantity: existing.quantity + 1 })
+          .update({ quantity: newQuantity })
           .eq('user_id', user.id)
           .eq('product_id', product.id)
           .eq('size', size)
@@ -151,7 +205,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           user_id: user.id,
           product_id: product.id,
           size,
-          quantity: 1,
+          quantity: newQuantity,
         })
       }
     },
@@ -191,7 +245,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   )
 
   const count = useMemo(() => items.reduce((sum, i) => sum + i.quantity, 0), [items])
-  const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.quantity * i.product.price, 0), [items])
+  const subtotal = useMemo(
+    () => items.reduce((sum, i) => sum + i.quantity * getCheckoutPrice(i.product), 0),
+    [items],
+  )
 
   const value = useMemo(
     () => ({ items, count, subtotal, loading, addItem, removeItem, setQuantity, user }),
@@ -201,7 +258,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   return (
     <CartContext.Provider value={value}>
       {children}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+      <div className="fixed bottom-24 right-6 z-50 flex flex-col gap-2">
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div
@@ -218,6 +275,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ))}
         </AnimatePresence>
       </div>
+      <FloatingCartButton count={count} />
     </CartContext.Provider>
   )
 }
@@ -227,3 +285,4 @@ export function useCart() {
   if (!ctx) throw new Error('useCart must be used within CartProvider')
   return ctx
 }
+//this fine is C:\Users\HP\salami\salami-app\components\cart-context.tsx

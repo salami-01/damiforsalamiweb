@@ -6,32 +6,10 @@ import { motion } from 'motion/react'
 import { supabase } from '@/lib/supabase'
 import type { SiteContent } from '@/lib/site-content'
 
-function useOrientation() {
-  const [isPortrait, setIsPortrait] = useState(true)
-
-  useEffect(() => {
-    function check() {
-      setIsPortrait(window.innerHeight > window.innerWidth)
-    }
-    check()
-    window.addEventListener('resize', check)
-    window.addEventListener('orientationchange', check)
-    return () => {
-      window.removeEventListener('resize', check)
-      window.removeEventListener('orientationchange', check)
-    }
-  }, [])
-
-  return isPortrait
-}
-
 export function LandingHero() {
   const [index, setIndex] = useState(0)
-  const [allImages, setAllImages] = useState<string[]>(['/campaign/hero.png'])
-  const [portraitImages, setPortraitImages] = useState<string[]>([])
-  const [landscapeImages, setLandscapeImages] = useState<string[]>([])
+  const [images, setImages] = useState<string[]>(['/campaign/hero.png'])
   const [intervalMs, setIntervalMs] = useState(4000)
-  const isPortrait = useOrientation()
 
   useEffect(() => {
     supabase
@@ -41,28 +19,14 @@ export function LandingHero() {
       .single()
       .then(({ data }) => {
         const landing = (data?.content as SiteContent)?.landing
-        if (landing) {
-          if (landing.images?.length) setAllImages(landing.images)
-          if (landing.portraitImages) setPortraitImages(landing.portraitImages)
-          if (landing.landscapeImages) setLandscapeImages(landing.landscapeImages)
-          if (landing.intervalMs) setIntervalMs(landing.intervalMs)
-        }
+        if (landing?.images?.length) setImages(landing.images)
+        if (landing?.intervalMs) setIntervalMs(landing.intervalMs)
       })
   }, [])
-
-  const images = isPortrait && portraitImages.length > 0
-    ? portraitImages
-    : !isPortrait && landscapeImages.length > 0
-    ? landscapeImages
-    : allImages
 
   const next = useCallback(() => {
     setIndex((i) => (i + 1) % images.length)
   }, [images.length])
-
-  useEffect(() => {
-    setIndex(0)
-  }, [isPortrait])
 
   useEffect(() => {
     if (images.length <= 1) return
