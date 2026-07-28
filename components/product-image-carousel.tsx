@@ -87,7 +87,7 @@ export function ProductImageCarousel({
         </div>
       )}
 
-      <div className="relative flex-1 aaspect-4/5 overflow-hidden bg-brand-graphite">
+      <div className="relative flex-1 aspect-4/5 overflow-hidden bg-brand-graphite">
         {badges.length > 0 && (
           <div className="absolute left-3 top-3 z-10 flex flex-col items-start gap-1.5">
             {badges.map((b, i) => (
