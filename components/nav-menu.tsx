@@ -12,6 +12,7 @@ const BASE_LINKS = [
   { label: 'Promo', href: '/promo' },
   { label: 'About', href: '/about' },
   { label: 'Terms and Conditions', href: '/terms' },
+  { label: 'Privacy Policy', href: '/privacy' },
   { label: 'Your Cart', href: '/cart' },
   { label: 'Contact', href: '/contact' },
 ]
