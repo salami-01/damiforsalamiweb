@@ -28,7 +28,7 @@ export default async function AccountPage() {
   const name = user.user_metadata?.full_name as string | undefined
 
   return (
-    <main className="min-h-screen bg-brand-graphite text-brand-bone">
+    <main className="min-h-screen text-brand-bone">
       <header className="px-6 pb-12 pt-28 md:px-16 md:pt-36 lg:px-24">
         <p className="font-mono text-[11px] uppercase tracking-[0.4em] text-brand-bone/50">
           My Account
@@ -73,7 +73,7 @@ export default async function AccountPage() {
                     {order.items.map((item, i) => (
                       <li key={i} className="flex flex-wrap justify-between gap-2 py-3 text-sm">
                         <div className="min-w-0 flex-1">
-                          <p className="break-words">{item.name}</p>
+                          <p className="wrap-break-word">{item.name}</p>
                           <p className="text-xs text-brand-bone/50">
                           {item.variant} — Size {item.size} × {item.quantity}
                           </p>

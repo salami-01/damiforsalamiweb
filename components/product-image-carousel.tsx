@@ -1,9 +1,24 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import { ChevronLeft, ChevronRight, ZoomIn, X } from 'lucide-react'
 
 export type CarouselBadge = { label: string; tone: 'sale' | 'info' }
+
+const SLIDE_INTERVAL_MS = 3000
+
+const slideVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? '100%' : '-100%',
+  }),
+  center: {
+    x: '0%',
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? '-100%' : '100%',
+  }),
+}
 
 export function ProductImageCarousel({
   images,
@@ -15,20 +30,30 @@ export function ProductImageCarousel({
   badges?: CarouselBadge[]
 }) {
   const [index, setIndex] = useState(0)
+  const [direction, setDirection] = useState(1)
   const [zoomed, setZoomed] = useState(false)
+
   const slides = images.length > 0 ? images : ['/placeholder.svg']
 
+  const goTo = useCallback(
+    (newIndex: number, dir: number) => {
+      setDirection(dir)
+      setIndex((newIndex + slides.length) % slides.length)
+    },
+    [slides.length]
+  )
+
   const next = useCallback(() => {
+    setDirection(1)
     setIndex((i) => (i + 1) % slides.length)
   }, [slides.length])
 
-  const prev = () => {
-    setIndex((i) => (i - 1 + slides.length) % slides.length)
-  }
+  const prev = () => goTo(index - 1, -1)
 
+  // Auto-advance, paused while the lightbox is open.
   useEffect(() => {
     if (slides.length <= 1 || zoomed) return
-    const timer = setInterval(next, 5000)
+    const timer = setInterval(next, SLIDE_INTERVAL_MS)
     return () => clearInterval(timer)
   }, [next, slides.length, zoomed])
 
@@ -45,12 +70,12 @@ export function ProductImageCarousel({
   return (
     <div className="flex gap-3">
       {slides.length > 1 && (
-        <div className="hidden max-h-[560px] shrink-0 flex-col gap-2 overflow-y-auto sm:flex">
+        <div className="hidden max-h-140 shrink-0 flex-col gap-2 overflow-y-auto sm:flex">
           {slides.map((src, i) => (
             <button
               key={src + i}
               type="button"
-              onClick={() => setIndex(i)}
+              onClick={() => goTo(i, i > index ? 1 : -1)}
               aria-label={`View image ${i + 1}`}
               className={`h-20 w-16 shrink-0 overflow-hidden border transition-colors ${
                 i === index ? 'border-brand-red' : 'border-brand-bone/15 hover:border-brand-bone/40'
@@ -62,7 +87,7 @@ export function ProductImageCarousel({
         </div>
       )}
 
-      <div className="relative flex-1 overflow-hidden bg-brand-graphite">
+      <div className="relative flex-1 aaspect-4/5 overflow-hidden bg-brand-graphite">
         {badges.length > 0 && (
           <div className="absolute left-3 top-3 z-10 flex flex-col items-start gap-1.5">
             {badges.map((b, i) => (
@@ -78,11 +103,23 @@ export function ProductImageCarousel({
           </div>
         )}
 
-        <img
-          src={slides[index]}
-          alt={alt}
-          className="aspect-[4/5] w-full object-cover transition-opacity duration-500"
-        />
+        <AnimatePresence initial={false} custom={direction}>
+          <motion.img
+            key={index}
+            src={slides[index]}
+            alt={alt}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+              duration: 0.5,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </AnimatePresence>
 
         <button
           type="button"
@@ -99,25 +136,26 @@ export function ProductImageCarousel({
               type="button"
               onClick={prev}
               aria-label="Previous image"
-              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-brand-bone hover:bg-black/60"
+              className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-2 text-brand-bone transition hover:bg-black/60"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
+
             <button
               type="button"
               onClick={next}
               aria-label="Next image"
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-brand-bone hover:bg-black/60"
+              className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-2 text-brand-bone transition hover:bg-black/60"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
 
-            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2 sm:hidden">
+            <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-2 sm:hidden">
               {slides.map((_, i) => (
                 <button
                   key={i}
                   type="button"
-                  onClick={() => setIndex(i)}
+                  onClick={() => goTo(i, i > index ? 1 : -1)}
                   aria-label={`Go to image ${i + 1}`}
                   className={`h-1.5 rounded-full transition-all ${
                     i === index ? 'w-5 bg-brand-bone' : 'w-1.5 bg-brand-bone/40'
@@ -131,7 +169,7 @@ export function ProductImageCarousel({
 
       {zoomed && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-6"
+          className="fixed inset-0 z-100 flex items-center justify-center bg-black/90 p-6"
           onClick={() => setZoomed(false)}
         >
           <button

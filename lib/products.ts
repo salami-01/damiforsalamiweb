@@ -99,3 +99,4 @@ export function getCheckoutPrice(product: Product): number {
   return product.price
 }
 export const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const
+//this is lib\products.ts

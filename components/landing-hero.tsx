@@ -3,55 +3,84 @@
 import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'motion/react'
-import { supabase } from '@/lib/supabase'
+import { getSiteContent } from '@/lib/site-content'
 import type { SiteContent } from '@/lib/site-content'
+
+type LandingImages = SiteContent['landing']
 
 export function LandingHero() {
   const [index, setIndex] = useState(0)
-  const [images, setImages] = useState<string[]>(['/campaign/hero.png'])
-  const [intervalMs, setIntervalMs] = useState(4000)
+  const [content, setContent] = useState<LandingImages | null>(null)
+  const [isPortrait, setIsPortrait] = useState<boolean | null>(null) // null = not yet determined
 
+  // Fetch the admin-managed image sets once, via the shared site-content helper.
   useEffect(() => {
-    supabase
-      .from('site_content')
-      .select('content')
-      .eq('id', 1)
-      .single()
-      .then(({ data }) => {
-        const landing = (data?.content as SiteContent)?.landing
-        if (landing?.images?.length) setImages(landing.images)
-        if (landing?.intervalMs) setIntervalMs(landing.intervalMs)
-      })
+    let cancelled = false
+    getSiteContent().then((data) => {
+      if (cancelled) return
+      setContent(data?.landing ?? null)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
+  // Track orientation live so resizing/rotating swaps the active image set.
+  useEffect(() => {
+    const mql = window.matchMedia('(orientation: portrait)')
+    setIsPortrait(mql.matches)
+    const handler = (e: MediaQueryListEvent) => setIsPortrait(e.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [])
+
+  // Resolve the active image set: orientation-specific set if it has images,
+  // otherwise fall back to the general set, otherwise the static default.
+  const images = (() => {
+    if (!content || isPortrait === null) return null
+    const specific = isPortrait ? content.portraitImages : content.landscapeImages
+    if (specific?.length) return specific
+    if (content.images?.length) return content.images
+    return ['/campaign/hero.png']
+  })()
+
+  const intervalMs = content?.intervalMs ?? 4000
+
+  // Reset to the first slide whenever the active image set changes (e.g. on
+  // orientation change) so we don't end up pointing at an out-of-range index.
+  useEffect(() => {
+    setIndex(0)
+  }, [images])
+
   const next = useCallback(() => {
-    setIndex((i) => (i + 1) % images.length)
-  }, [images.length])
+    setIndex((i) => (images ? (i + 1) % images.length : 0))
+  }, [images])
 
   useEffect(() => {
-    if (images.length <= 1) return
+    if (!images || images.length <= 1) return
     const timer = setInterval(next, intervalMs)
     return () => clearInterval(timer)
-  }, [next, images.length, intervalMs])
+  }, [next, images, intervalMs])
 
   return (
-    <main className="relative h-[100svh] w-full overflow-hidden bg-brand-black">
-      {images.map((src, i) => (
-        <motion.img
-          key={src}
-          src={src}
-          alt="Salami campaign"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: i === index ? 1 : 0 }}
-          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      ))}
+    <main className="relative h-svh w-full overflow-hidden bg-brand-black">
+      {images &&
+        images.map((src, i) => (
+          <motion.img
+            key={src}
+            src={src}
+            alt="Salami campaign"
+            initial={{ opacity: i === 0 && index === 0 ? 1 : 0 }}
+            animate={{ opacity: i === index ? 1 : 0 }}
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ))}
 
-      <div className="absolute inset-0 bg-gradient-to-b from-brand-black/70 via-brand-black/30 to-brand-black/80" />
+      <div className="absolute inset-0 bg-linear-to-b from-brand-black/70 via-brand-black/30 to-brand-black/80" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(0,0,0,0.75)_100%)]" />
 
-      {images.length > 1 && (
+      {images && images.length > 1 && (
         <div className="absolute bottom-20 left-1/2 flex -translate-x-1/2 gap-2">
           {images.map((_, i) => (
             <button

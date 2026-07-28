@@ -40,7 +40,7 @@ export default function CheckoutPage() {
 }
 
 if (loading) {
-    return <main className="min-h-screen bg-brand-graphite px-6 pt-32 text-brand-bone">Loading...</main>
+    return <main className="min-h-screen px-6 pt-32 text-brand-bone">Loading...</main>
 }
 
 if (!user) {
@@ -65,7 +65,7 @@ const inputClass =
     'w-full border-0 border-b border-brand-bone/25 bg-transparent py-3 text-sm text-brand-bone outline-none focus:border-brand-red'
 
 return (
-    <main className="min-h-screen bg-brand-graphite px-6 pt-28 text-brand-bone md:px-16 lg:px-24">
+    <main className="min-h-screen px-6 pt-28 text-brand-bone md:px-16 lg:px-24">
     <h1 className="font-heading text-4xl font-black uppercase tracking-tighter sm:text-5xl">Checkout</h1>
 
     <div className="mt-12 grid grid-cols-1 gap-12 lg:grid-cols-2">

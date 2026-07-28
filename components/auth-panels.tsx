@@ -28,7 +28,7 @@ function VisualPanel() {
       />
       <motion.div
         layout
-        className="absolute bottom-0 right-0 h-[28rem] w-[28rem] rounded-full bg-brand-black/70 blur-3xl"
+        className="absolute bottom-0 right-0 h-112 w-md rounded-full bg-brand-black/70 blur-3xl"
         animate={{ x: [0, -30, 0], y: [0, -40, 0], scale: [1, 1.2, 1] }}
         transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
       />
@@ -189,7 +189,7 @@ export function AuthPanels({ initialMode = 'signin' }: { initialMode?: 'signin' 
   )
 
   return (
-    <main className="flex min-h-[100svh] w-full flex-col bg-brand-slate md:flex-row">
+    <main className="flex min-h-svh w-full flex-col md:flex-row">
       {isSignIn ? (
         <>
           {form}

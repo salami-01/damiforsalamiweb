@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-[100svh] w-full items-center justify-center bg-brand-slate px-6">
+    <main className="flex min-h-svh w-full items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <h1 className="font-heading text-4xl font-black uppercase leading-none tracking-tighter text-brand-bone">
           Reset Password

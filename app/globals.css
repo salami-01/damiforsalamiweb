@@ -19,6 +19,15 @@
   --color-brand-red: #7a1023;
   --color-brand-bone: #f5f2ee;
 
+  /* Backdrop-only gradient stops — darkened versions of gunmetal/slate so
+     the gradient's mid-band never gets lighter than the old flat
+     brand-graphite background. Keeps text contrast ratios unchanged from
+     before the gradient was introduced. Not used anywhere except
+     body::before below — brand-gunmetal/brand-slate stay untouched for
+     their existing UI uses. */
+  --color-gradient-mid-1: #292b2d;
+  --color-gradient-mid-2: #292b2f;
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -125,7 +134,9 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    position: relative;
+    isolation: isolate;
   }
   html {
     @apply font-sans;
@@ -133,6 +144,29 @@
   .font-heading {
     font-family: var(--font-heading);
   }
+}
+
+/*
+ * Site-wide "immiscible" backdrop — a diagonal blend from black into
+ * burgundy/red, fixed to the viewport so it never scrolls with content.
+ * Sits at z-index -1 behind everything. The admin section paints its own
+ * opaque --background on top (see .admin-theme above), so no exclusion
+ * rule is needed here.
+ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    150deg,
+    var(--color-brand-black) 0%,
+    var(--color-brand-charcoal) 26%,
+    var(--color-gradient-mid-1) 42%,
+    var(--color-gradient-mid-2) 54%,
+    var(--color-brand-burgundy) 74%,
+    var(--color-brand-red) 100%
+  );
 }
 
 /* Hide scrollbar utility for immersive landing */

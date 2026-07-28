@@ -12,7 +12,7 @@ export function CartView() {
   const router = useRouter()
 
   return (
-    <main className="min-h-screen bg-brand-slate text-brand-bone">
+    <main className="min-h-screen text-brand-bone">
       <div className="mx-auto max-w-6xl px-6 pb-28 pt-28 md:px-10 md:pt-36">
         <h1 className="font-heading text-5xl font-black uppercase leading-none tracking-tighter sm:text-6xl">
           Your Cart

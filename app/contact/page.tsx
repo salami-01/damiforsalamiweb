@@ -24,7 +24,7 @@ export default async function ContactPage() {
   ]
 
   return (
-    <main className="flex min-h-screen flex-col bg-brand-charcoal text-brand-bone">
+    <main className="flex min-h-screen flex-col text-brand-bone">
       <div className="flex-1 px-6 pt-28 md:px-16 md:pt-36 lg:px-24">
         <div className="grid grid-cols-1 gap-16 pb-28 lg:grid-cols-2">
           <div>

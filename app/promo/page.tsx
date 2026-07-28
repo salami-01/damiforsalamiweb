@@ -77,3 +77,4 @@ export default function PromoPage() {
     </main>
   )
 }
+// this is app\promo\page.tsx

@@ -60,7 +60,7 @@ export function NavMenu() {
         aria-label={open ? 'Close menu' : 'Open menu'}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="fixed left-5 top-5 z-[60] flex h-10 w-10 items-center justify-center md:left-8 md:top-8"
+        className="fixed left-5 top-5 z-60 flex h-10 w-10 items-center justify-center md:left-8 md:top-8"
       >
         <span className="relative block h-4 w-7">
           <motion.span
@@ -84,12 +84,12 @@ export function NavMenu() {
       </button>
 
       <Link
-  href="/home"
-  aria-label="Salami home"
-  className="absolute left-1/2 top-5 z-[55] -translate-x-1/2 md:top-7"
->
-  <img src="/logo.png" alt="Salami" className="h-8 w-auto md:h-10" />
-</Link>
+        href="/home"
+        aria-label="Salami home"
+        className="absolute left-1/2 top-5 z-55 -translate-x-1/2 md:top-7"
+      >
+        <img src="/logo.png" alt="Salami" className="h-8 w-auto md:h-10" />
+      </Link>
 
       <AnimatePresence>
         {open && (
@@ -99,72 +99,74 @@ export function NavMenu() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-0 z-[50] flex flex-col justify-center bg-brand-black/95 px-6 backdrop-blur-md md:px-20"
+            className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-brand-black/95 px-6 py-24 backdrop-blur-md md:px-20"
           >
-            <ul className="flex flex-col gap-2 md:gap-4">
-              {links.map((link, i) => {
-                const active = pathname === link.href
-                const content = (
-                  <>
-                    <span className="font-mono text-xs font-normal tracking-widest text-brand-slate">
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
-                    <span className="relative">
-                      {link.label}
-                      {link.label === 'Your Cart' && count > 0 && (
-                        <span className="ml-3 align-super font-mono text-sm text-brand-red">
-                          ({count})
-                        </span>
-                      )}
-                      <span
-                        className={`absolute -bottom-1 left-0 h-px bg-brand-red transition-all duration-500 ${
-                          active ? 'w-full' : 'w-0 group-hover:w-full'
-                        }`}
-                      />
-                    </span>
-                  </>
-                )
+            <div className="m-auto w-full py-8">
+              <ul className="flex flex-col gap-2 md:gap-4">
+                {links.map((link, i) => {
+                  const active = pathname === link.href
+                  const content = (
+                    <>
+                      <span className="font-mono text-xs font-normal tracking-widest text-brand-slate">
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      <span className="relative">
+                        {link.label}
+                        {link.label === 'Your Cart' && count > 0 && (
+                          <span className="ml-3 align-super font-mono text-sm text-brand-red">
+                            ({count})
+                          </span>
+                        )}
+                        <span
+                          className={`absolute -bottom-1 left-0 h-px bg-brand-red transition-all duration-500 ${
+                            active ? 'w-full' : 'w-0 group-hover:w-full'
+                          }`}
+                        />
+                      </span>
+                    </>
+                  )
 
-                return (
-                  <motion.li
-                    key={link.label}
-                    initial={{ opacity: 0, y: 28 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 12 }}
-                    transition={{
-                      duration: 0.6,
-                      delay: 0.1 + i * 0.06,
-                      ease: [0.22, 1, 0.36, 1],
-                    }}
-                  >
-                    {'isLogout' in link ? (
-                      <button
-                        type="button"
-                        onClick={() => setConfirmingLogout(true)}
-                        className="group inline-flex items-baseline gap-4 font-heading text-4xl font-extrabold uppercase leading-none tracking-tight text-brand-bone transition-colors duration-500 hover:text-brand-red sm:text-6xl md:text-7xl"
-                      >
-                        {content}
-                      </button>
-                    ) : (
-                      <Link
-                        href={link.href}
-                        className={`group inline-flex items-baseline gap-4 font-heading text-4xl font-extrabold uppercase leading-none tracking-tight transition-colors duration-500 sm:text-6xl md:text-7xl ${
-                          active ? 'text-brand-red' : 'text-brand-bone hover:text-brand-red'
-                        }`}
-                      >
-                        {content}
-                      </Link>
-                    )}
-                  </motion.li>
-                )
-              })}
-            </ul>
+                  return (
+                    <motion.li
+                      key={link.label}
+                      initial={{ opacity: 0, y: 28 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 12 }}
+                      transition={{
+                        duration: 0.6,
+                        delay: 0.1 + i * 0.06,
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
+                    >
+                      {'isLogout' in link ? (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingLogout(true)}
+                          className="group inline-flex items-baseline gap-4 font-heading text-4xl font-extrabold uppercase leading-none tracking-tight text-brand-bone transition-colors duration-500 hover:text-brand-red sm:text-6xl md:text-7xl"
+                        >
+                          {content}
+                        </button>
+                      ) : (
+                        <Link
+                          href={link.href}
+                          className={`group inline-flex items-baseline gap-4 font-heading text-4xl font-extrabold uppercase leading-none tracking-tight transition-colors duration-500 sm:text-6xl md:text-7xl ${
+                            active ? 'text-brand-red' : 'text-brand-bone hover:text-brand-red'
+                          }`}
+                        >
+                          {content}
+                        </Link>
+                      )}
+                    </motion.li>
+                  )
+                })}
+              </ul>
+            </div>
 
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.8 }}
-              className="absolute bottom-8 left-6 max-w-xs font-mono text-[11px] uppercase leading-relaxed tracking-widest text-brand-slate md:left-20"
+              className="mt-12 max-w-xs font-mono text-[11px] uppercase leading-relaxed tracking-widest text-brand-slate md:ml-14"
             >
               Salami — SM
               <br />A modern luxury streetwear label.
@@ -179,7 +181,7 @@ export function NavMenu() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 px-6"
+            className="fixed inset-0 z-70 flex items-center justify-center bg-black/70 px-6"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -216,4 +218,3 @@ export function NavMenu() {
     </>
   )
 }
-//components/nav-menu.tsx

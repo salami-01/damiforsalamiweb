@@ -39,7 +39,7 @@ const POLICIES = [
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen bg-brand-graphite text-brand-bone">
+    <main className="min-h-screen text-brand-bone">
       <header className="px-6 pb-16 pt-28 md:px-16 md:pt-36 lg:px-24">
         <p className="font-mono text-[11px] uppercase tracking-[0.4em] text-brand-bone/50">
           The Fine Print

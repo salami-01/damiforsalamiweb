@@ -50,7 +50,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${archivo.variable} ${inter.variable} ${geistMono.variable} bg-background`}
+      className={`${archivo.variable} ${inter.variable} ${geistMono.variable}`}
     >
       <body className="font-sans antialiased">
         <CartProvider>
@@ -63,3 +63,4 @@ export default function RootLayout({
     </html>
   )
 }
+//this is app\layout.tsx
