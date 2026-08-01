@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Package, ClipboardList, FileText, Mail, Users, Menu, X, Tags } from 'lucide-react'
+import { Package, ClipboardList, FileText, Mail, Users, Menu, X, Tags, Percent } from 'lucide-react'
+import { AdminPromotions } from '@/components/admin/admin-promotions'
 import { AdminProducts } from '@/components/admin/admin-products'
 import { AdminOrders } from '@/components/admin/admin-orders'
 import { AdminContent } from '@/components/admin/admin-content'
@@ -9,9 +10,10 @@ import { AdminMessages } from '@/components/admin/admin-messages'
 import { AdminUsers } from '@/components/admin/admin-users'
 import { AdminCategories } from '@/components/admin/admin-categories'
 
-type Tab = 'products' | 'orders' | 'content' | 'messages' | 'users' | 'categories'
+type Tab = 'products' | 'orders' | 'content' | 'messages' | 'users' | 'categories' | 'promotions'
 const NAV: { id: Tab; label: string; icon: typeof Package }[] = [
   { id: 'products', label: 'Products', icon: Package },
+  { id: 'promotions', label: 'Promotions', icon: Percent },
   { id: 'orders', label: 'Orders', icon: ClipboardList },
   { id: 'content', label: 'Content', icon: FileText },
   { id: 'messages', label: 'Messages', icon: Mail },
@@ -102,6 +104,7 @@ export function AdminDashboard() {
 
       <main className="flex-1 overflow-x-auto p-4 md:p-10">
         {tab === 'products' && <AdminProducts />}
+        {tab === 'promotions' && <AdminPromotions />}
         {tab === 'orders' && <AdminOrders />}
         {tab === 'content' && <AdminContent />}
         {tab === 'messages' && <AdminMessages />}
@@ -111,3 +114,4 @@ export function AdminDashboard() {
     </div>
   )
 }
+// this is the admin dashboard component that allows navigation between different admin sections such as products, promotions, orders, content, messages, users, and categories. It includes a mobile-friendly top bar and a desktop sidebar for navigation.
