@@ -160,3 +160,4 @@ export function ProductDetailActions({ product }: { product: Product }) {
     </div>
   )
 }
+//this is product-detail-actions.tsx

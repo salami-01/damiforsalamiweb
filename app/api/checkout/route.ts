@@ -1,18 +1,49 @@
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { initializeTransaction } from '@/lib/paystack'
+import type { Product } from '@/lib/products'
 
-export async function POST(request: Request) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export const dynamic = 'force-dynamic'
 
-  if (!user) {
-    return Response.json({ error: 'Not logged in' }, { status: 401 })
+type CheckoutBody = {
+  shippingName?: unknown
+  shippingAddress?: unknown
+  shippingCity?: unknown
+  shippingPhone?: unknown
+}
+
+function requireNonEmptyString(value: unknown, field: string): string {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new Error(`${field} is required.`)
+  }
+  return value.trim()
+}
+
+export async function POST(req: Request) {
+  let body: CheckoutBody
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
   }
 
-  const { shippingName, shippingAddress, shippingCity, shippingPhone } = await request.json()
+  let shippingName: string, shippingAddress: string, shippingCity: string, shippingPhone: string
+  try {
+    shippingName = requireNonEmptyString(body.shippingName, 'Full name')
+    shippingAddress = requireNonEmptyString(body.shippingAddress, 'Address')
+    shippingCity = requireNonEmptyString(body.shippingCity, 'City')
+    shippingPhone = requireNonEmptyString(body.shippingPhone, 'Phone number')
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 400 })
+  }
 
-  if (!shippingName || !shippingAddress || !shippingCity || !shippingPhone) {
-    return Response.json({ error: 'Missing shipping details' }, { status: 400 })
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user || !user.email) {
+    return NextResponse.json({ error: 'You must be logged in to check out.' }, { status: 401 })
   }
 
   const { data: cartRows, error: cartError } = await supabase
@@ -20,58 +51,87 @@ export async function POST(request: Request) {
     .select('size, quantity, products(*)')
     .eq('user_id', user.id)
 
-  if (cartError || !cartRows || cartRows.length === 0) {
-    return Response.json({ error: 'Cart is empty' }, { status: 400 })
+  if (cartError) {
+    console.error('Checkout: failed to load cart:', cartError.message)
+    return NextResponse.json({ error: 'Could not load your cart.' }, { status: 500 })
   }
 
-  const items = cartRows
-    .filter((row: any) => row.products)
+  // Map each product to a single object (if returned as an array) before type guarding
+  const rows = (cartRows ?? [])
     .map((row: any) => ({
-      product_id: row.products.id as string,
-      name: row.products.name as string,
-      variant: row.products.variant as string,
-      size: row.size as string,
-      quantity: row.quantity as number,
-      price: row.products.price as number,
-      stock: row.products.stock as number,
+      ...row,
+      products: Array.isArray(row.products) ? row.products[0] : row.products,
     }))
+    .filter(
+      (row: any): row is { size: string; quantity: number; products: Product } =>
+        !!row.products && typeof row.products === 'object',
+    )
 
-  for (const item of items) {
-    if (item.quantity > item.stock) {
-      return Response.json(
-        { error: `${item.name} (${item.variant}) only has ${item.stock} left in stock.` },
-        { status: 400 },
+  if (rows.length === 0) {
+    return NextResponse.json({ error: 'Your cart is empty.' }, { status: 400 })
+  }
+
+  // Server is the only source of truth for price and stock — never trust anything
+  // about the order beyond the shipping fields from the client.
+  const items: Array<{
+    product_id: string
+    name: string
+    variant: string
+    size: string
+    quantity: number
+    price: number
+  }> = []
+
+  for (const row of rows) {
+    const product = row.products
+    if (row.quantity > product.stock) {
+      return NextResponse.json(
+        {
+          error:
+            product.stock === 0
+              ? `${product.name} is now out of stock. Please remove it from your cart.`
+              : `Only ${product.stock} of ${product.name} left. Please update your cart.`,
+        },
+        { status: 409 },
       )
     }
+    items.push({
+      product_id: product.id,
+      name: product.name,
+      variant: product.variant,
+      size: row.size,
+      quantity: row.quantity,
+      price: product.price,
+    })
   }
 
-  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
-  const reference = `salami-${Date.now()}-${user.id.slice(0, 8)}`
-  const shipping = `${shippingName}, ${shippingAddress}, ${shippingCity}. Phone: ${shippingPhone}`
-  const origin = request.headers.get('origin') || ''
+  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  if (total <= 0) {
+    return NextResponse.json({ error: 'Invalid order total.' }, { status: 400 })
+  }
+
+  const shipping = `${shippingAddress}, ${shippingCity} — ${shippingPhone}`
+  const origin = req.headers.get('origin') ?? new URL(req.url).origin
 
   try {
-    const transaction = await initializeTransaction({
-      email: user.email!,
-      amountKobo: total * 100,
-      reference,
-      callbackUrl: `${origin}/checkout/callback`,
+    const { authorization_url } = await initializeTransaction({
+      email: user.email,
+      amount: Math.round(total * 100), // naira -> kobo
+      callback_url: `${origin}/checkout/callback`,
       metadata: {
         user_id: user.id,
         customer: shippingName,
         shipping,
-        items: items.map((i) => ({
-          product_id: i.product_id,
-          name: i.name,
-          variant: i.variant,
-          size: i.size,
-          quantity: i.quantity,
-          price: i.price,
-        })),
+        items,
       },
     })
-    return Response.json({ url: transaction.authorization_url })
+
+    return NextResponse.json({ url: authorization_url })
   } catch (err: any) {
-    return Response.json({ error: err.message || 'Payment initialization failed' }, { status: 500 })
+    console.error('Checkout: Paystack initialization failed:', err.message)
+    return NextResponse.json(
+      { error: 'Could not start payment. Please try again shortly.' },
+      { status: 502 },
+    )
   }
 }
