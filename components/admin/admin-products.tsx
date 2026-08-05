@@ -166,19 +166,28 @@ export function AdminProducts() {
     }
 
     if (isNew) {
-      const { error } = await supabase.from('products').insert({ id: editing.id, ...payload })
-      if (error) {
-        setError(error.message)
-        setSaving(false)
-        return
-      }
+      const res = await fetch('/api/admin/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: editing.id, ...payload }),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      setError(data.error || 'Failed to create product.')
+      setSaving(false)
+      return
+    }
     } else {
-      const { error } = await supabase.from('products').update(payload).eq('id', editing.id)
-
-      if (error) {
-        setError(error.message)
-        setSaving(false)
-        return
+      const res = await fetch(`/api/admin/products/${editing.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      setError(data.error || 'Failed to update product.')
+      setSaving(false)
+      return
       }
     }
 
@@ -190,11 +199,12 @@ export function AdminProducts() {
   async function remove(id: string) {
     const confirmed = window.confirm('Delete this product? This cannot be undone.')
     if (!confirmed) return
-    const { error } = await supabase.from('products').delete().eq('id', id)
-    if (error) {
-      setError(error.message)
-      return
-    }
+    const res = await fetch(`/api/admin/products/${id}`, { method: 'DELETE' })
+  if (!res.ok) {
+    const data = await res.json()
+    setError(data.error || 'Failed to delete product.')
+    return
+  }
     loadProducts()
   }
 

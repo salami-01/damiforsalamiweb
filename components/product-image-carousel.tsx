@@ -191,3 +191,4 @@ export function ProductImageCarousel({
     </div>
   )
 }
+// this is components\product-image-carousel.tsx

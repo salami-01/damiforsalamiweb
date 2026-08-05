@@ -60,3 +60,4 @@ export async function getSiteContent(): Promise<SiteContent | null> {
   }
   return data.content as SiteContent
 }
+//this is lib\site-content.ts

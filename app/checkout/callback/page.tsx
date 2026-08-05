@@ -27,10 +27,6 @@ export default async function CheckoutCallbackPage({
   const { reference } = await searchParams
   if (!reference) return <FailureView message="Missing payment reference." />
 
-  // The webhook is the authoritative fulfillment path — it may well have already
-  // created the order by the time this page renders. fulfillPaystackOrder is
-  // idempotent, so calling it again here just confirms and returns the same order
-  // (or creates it, if the webhook hasn't landed yet).
   const result = await fulfillPaystackOrder(reference)
 
   if (!result.ok) {
@@ -53,3 +49,4 @@ export default async function CheckoutCallbackPage({
     </main>
   )
 }
+//app/checkout/callback/page.tsx

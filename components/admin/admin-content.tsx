@@ -107,13 +107,15 @@ export function AdminContent() {
     if (!content) return
     setSaving(true)
     setError(null)
-    const { error } = await supabase
-      .from('site_content')
-      .update({ content })
-      .eq('id', 1)
+    const res = await fetch('/api/admin/site-content', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(content),
+  })
     setSaving(false)
-    if (error) {
-      setError(error.message)
+    if (!res.ok) {
+    const data = await res.json()
+    setError(data.error || 'Failed to save content.')
       return
     }
     setSaved(true)

@@ -135,3 +135,4 @@ export async function POST(req: Request) {
     )
   }
 }
+// this is app\api\checkout\route.ts file that handles the checkout process. It validates the request body, checks the user's cart, calculates the total, and initializes a Paystack transaction. It returns the authorization URL for the client to redirect the user to Paystack for payment.

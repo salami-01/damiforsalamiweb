@@ -39,3 +39,4 @@ export function SiteFooter() {
     </footer>
   )
 }
+//this is components\site-footer.tsx

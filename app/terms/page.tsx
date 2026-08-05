@@ -83,3 +83,4 @@ export default function TermsPage() {
     </main>
   )
 }
+// this is app\terms\page.tsx

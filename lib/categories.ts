@@ -18,3 +18,4 @@ export async function getCategories(): Promise<Category[]> {
     }
     return data as Category[]
     }
+    //this is lib\categories.ts

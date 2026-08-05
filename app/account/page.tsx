@@ -5,10 +5,12 @@ import type { Order } from '@/lib/orders'
 import { SiteFooter } from '@/components/site-footer'
 
 const STATUS_STYLE: Record<string, string> = {
-  Processing: 'bg-brand-bone/10 text-brand-bone/70',
-  Shipped: 'bg-amber-500/15 text-amber-400',
-  Delivered: 'bg-emerald-500/15 text-emerald-400',
-}
+    Processing: 'bg-brand-bone/10 text-brand-bone/70',
+    Shipped: 'bg-amber-500/15 text-amber-400',
+    Delivered: 'bg-emerald-500/15 text-emerald-400',
+    Refunded: 'bg-blue-500/15 text-blue-400',
+    Cancelled: 'bg-brand-bone/5 text-brand-bone/40',
+  }
 
 export default async function AccountPage() {
   const supabase = await createClient()

@@ -8,3 +8,4 @@ export default function SignupPage() {
     </Suspense>
   )
 }
+// this is app\signup\page.tsx

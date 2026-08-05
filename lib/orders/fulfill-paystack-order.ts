@@ -53,7 +53,14 @@ export async function fulfillPaystackOrder(reference: string): Promise<Fulfillme
   )
 
   if (verification.status !== 'success') {
-    return { ok: false, error: 'Payment was not successful.' }
+    const statusMessages: Record<string, string> = {
+    failed: 'Your payment failed. Please try again or use a different payment method.',
+    abandoned: 'The payment was not completed.',
+  }
+  return {
+    ok: false,
+    error: statusMessages[verification.status] ?? `Payment status: ${verification.status}.`,
+  }
   }
 
   const { data: existing, error: existingError } = await admin
@@ -80,7 +87,15 @@ export async function fulfillPaystackOrder(reference: string): Promise<Fulfillme
   if (!metadata?.items?.length) {
     return { ok: false, error: 'Payment succeeded but order metadata is missing or malformed.' }
   }
-
+   // Paystack round-trips metadata as strings regardless of what we send —
+  // coerce back to real numbers here so orders.items always stores true
+  // numeric types, not strings that happen to work with some operators
+  // and silently break with others (e.g. "10" + "2" = "102", not 12).
+  const items: OrderItem[] = metadata.items.map((item) => ({
+    ...item,
+    quantity: Number(item.quantity),
+    price: Number(item.price),
+  }))
   const orderId = `SM-${Date.now().toString().slice(-6)}`
   const total = verification.amount / 100
 
@@ -94,7 +109,7 @@ export async function fulfillPaystackOrder(reference: string): Promise<Fulfillme
       date: new Date().toISOString().slice(0, 10),
       status: 'Processing',
       shipping: metadata.shipping,
-      items: metadata.items,
+      items,
       payment_reference: reference,
       total,
     })
@@ -125,17 +140,13 @@ export async function fulfillPaystackOrder(reference: string): Promise<Fulfillme
 
   await admin.from('payments').update({ order_id: orderId }).eq('reference', reference)
 
-  for (const item of metadata.items) {
-    const { data: product } = await admin
-      .from('products')
-      .select('stock')
-      .eq('id', item.product_id)
-      .single()
-    if (product) {
-      await admin
-        .from('products')
-        .update({ stock: Math.max(0, product.stock - item.quantity) })
-        .eq('id', item.product_id)
+  for (const item of items) {
+    const { error: stockError } = await admin.rpc('decrement_stock', {
+      p_product_id: item.product_id,
+      p_quantity: Number(item.quantity),
+    })
+    if (stockError) {
+      console.error('Stock decrement failed for', item.product_id, stockError.message)
     }
   }
 
@@ -161,3 +172,4 @@ export async function fulfillPaystackOrder(reference: string): Promise<Fulfillme
 
   return { ok: true, order, alreadyProcessed: false }
 }
+// this is fulfill-paystack-order.ts file that verifies a Paystack payment reference, creates an order if the payment succeeded, decrements stock, clears the cart, and sends confirmation emails. It is designed to be idempotent, allowing multiple calls for the same reference without creating duplicate orders.

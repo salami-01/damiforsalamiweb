@@ -77,14 +77,16 @@ export function AdminPromotions() {
     setError(null)
     const promoEndsAt = draft.promoEndsAt ? new Date(draft.promoEndsAt).toISOString() : null
 
-    const { error } = await supabase
-      .from('products')
-      .update({ compareAtPrice, promoEndsAt })
-      .eq('id', id)
+    const res = await fetch(`/api/admin/products/${id}/promo`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ compareAtPrice, promoEndsAt }),
+  })
 
     setSavingId(null)
-    if (error) {
-      setError(error.message)
+    if (!res.ok) {
+    const data = await res.json()
+    setError(data.error || 'Failed to save promo.')
       return
     }
     setProducts((prev) =>
@@ -97,14 +99,16 @@ export function AdminPromotions() {
   async function clearPromo(id: string) {
     setSavingId(id)
     setError(null)
-    const { error } = await supabase
-      .from('products')
-      .update({ compareAtPrice: null, promoEndsAt: null })
-      .eq('id', id)
+    const res = await fetch(`/api/admin/products/${id}/promo`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ compareAtPrice: null, promoEndsAt: null }),
+  })
 
     setSavingId(null)
-    if (error) {
-      setError(error.message)
+    if (!res.ok) {
+    const data = await res.json()
+    setError(data.error || 'Failed to clear promo.')
       return
     }
     updateDraft(id, { compareAtPrice: '', promoEndsAt: '' })
@@ -220,3 +224,4 @@ export function AdminPromotions() {
     </div>
   )
 }
+//components\admin\admin-promotions.tsx

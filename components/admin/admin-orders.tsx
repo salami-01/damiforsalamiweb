@@ -11,6 +11,8 @@ const STATUS_STYLE: Record<OrderStatus, string> = {
   Processing: 'bg-secondary text-secondary-foreground',
   Shipped: 'bg-amber-100 text-amber-800',
   Delivered: 'bg-emerald-100 text-emerald-800',
+  Refunded: 'bg-blue-100 text-blue-800',
+  Cancelled: 'bg-muted text-muted-foreground',
 }
 
 const PAGE_SIZE = 8
@@ -26,6 +28,8 @@ export function AdminOrders() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'All'>('All')
   const [page, setPage] = useState(1)
+  const [refunding, setRefunding] = useState<string | null>(null)
+  const [refundError, setRefundError] = useState<string | null>(null)
   const supabase = createClient()
 
   const loadOrders = useCallback(async () => {
@@ -78,10 +82,41 @@ export function AdminOrders() {
     setPage(1)
   }
 
+  async function refundViaRoute(id: string) {
+    setRefunding(id)
+    setRefundError(null)
+    try {
+      const res = await fetch('/api/admin/refund-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Refund failed.')
+      setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: 'Refunded' } : o)))
+      setActive((prev) => (prev && prev.id === id ? { ...prev, status: 'Refunded' } : prev))
+    } catch (err: any) {
+      setRefundError(err.message)
+    } finally {
+      setRefunding(null)
+    }
+  }
+
   async function updateStatus(id: string, status: OrderStatus) {
+    if (status === 'Refunded') {
+      return refundViaRoute(id)
+    }
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)))
     setActive((prev) => (prev && prev.id === id ? { ...prev, status } : prev))
-    await supabase.from('orders').update({ status }).eq('id', id)
+    const res = await fetch(`/api/admin/orders/${id}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  })
+  if (!res.ok) {
+    // Roll back the optimistic update — the write didn't actually happen.
+    loadOrders()
+  }
   }
 
   if (loading) {
@@ -167,6 +202,7 @@ export function AdminOrders() {
                     <select
                       value={o.status}
                       onChange={(e) => updateStatus(o.id, e.target.value as OrderStatus)}
+                      disabled={refunding === o.id || o.status === 'Refunded'}
                       className={`rounded-full px-3 py-1 text-xs font-medium outline-none ${STATUS_STYLE[o.status]}`}
                     >
                       {ORDER_STATUSES.map((s) => (
@@ -249,6 +285,7 @@ export function AdminOrders() {
               <select
                 value={active.status}
                 onChange={(e) => updateStatus(active.id, e.target.value as OrderStatus)}
+                disabled={refunding === active.id || active.status === 'Refunded'}
                 className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               >
                 {ORDER_STATUSES.map((s) => (
@@ -257,6 +294,9 @@ export function AdminOrders() {
                   </option>
                 ))}
               </select>
+              {refundError && active.status !== 'Refunded' && (
+                <p className="mt-2 text-xs text-destructive">{refundError}</p>
+              )}
             </div>
 
             <div className="mt-6">
@@ -285,3 +325,4 @@ export function AdminOrders() {
     </div>
   )
 }
+//this is components\admin\admin-orders.tsx

@@ -67,3 +67,4 @@ export default function ShopPage() {
     </main>
   )
 }
+//this is app\shop\page.tsx

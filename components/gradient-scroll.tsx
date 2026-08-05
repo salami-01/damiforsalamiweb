@@ -30,3 +30,4 @@ export function GradientScroll({ colors, children, className }: Props) {
     </motion.div>
   )
 }
+//components\gradient-scroll.tsx

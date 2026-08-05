@@ -21,3 +21,4 @@ export default function NotFound() {
     </main>
   )
 }
+// this is app\not-found.tsx

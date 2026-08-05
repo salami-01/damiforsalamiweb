@@ -126,3 +126,4 @@ export default function ResetPasswordPage() {
     </main>
   )
 }
+//this is app\reset-password\page.tsx

@@ -71,3 +71,4 @@ export default async function ContactPage() {
     </main>
   )
 }
+// this is app\contact\page.tsx

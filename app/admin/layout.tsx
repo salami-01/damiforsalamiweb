@@ -23,3 +23,4 @@ export default async function AdminLayout({
     </div>
   )
 }
+//this is app\admin\layout.tsx

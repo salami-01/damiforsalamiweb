@@ -204,3 +204,4 @@ export function AuthPanels({ initialMode = 'signin' }: { initialMode?: 'signin' 
     </main>
   )
 }
+//components\auth-panels.tsx

@@ -24,3 +24,4 @@ export function Reveal({ children, className, delay = 0, y = 40 }: Props) {
     </motion.div>
   )
 }
+// this is components\reveal.tsx

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Mail, MailOpen } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 
 type Message = {
   id: string
@@ -16,23 +15,31 @@ type Message = {
 export function AdminMessages() {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    const { data } = await supabase
-      .from('contact_messages')
-      .select('*')
-      .order('created_at', { ascending: false })
-    setMessages((data ?? []) as Message[])
+    const res = await fetch('/api/admin/messages', { cache: 'no-store' })
+    const data = await res.json()
+    if (!res.ok) {
+      setError(data.error || 'Failed to load messages.')
+      setLoading(false)
+      return
+    }
+    setMessages(data.messages as Message[])
     setLoading(false)
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
     load()
   }, [load])
 
   async function markRead(id: string) {
-    await supabase.from('contact_messages').update({ read: true }).eq('id', id)
+      const res = await fetch(`/api/admin/messages/${id}/read`, { method: 'PATCH' })
+    if (!res.ok) {
+      const data = await res.json()
+      setError(data.error || 'Failed to mark as read.')
+      return
+    }
     load()
   }
 
@@ -42,6 +49,11 @@ export function AdminMessages() {
     <div>
       <h2 className="text-xl font-semibold">Messages</h2>
       <p className="mt-1 text-sm text-muted-foreground">{messages.length} submissions</p>
+      {error && (
+        <p className="mt-4 rounded-md bg-destructive/10 px-4 py-2 text-sm text-destructive">
+          {error}
+        </p>
+      )}
 
       <div className="mt-6 flex flex-col gap-3">
         {messages.map((m) => (
@@ -76,3 +88,4 @@ export function AdminMessages() {
     </div>
   )
 }
+//components\admin\admin-messages.tsx

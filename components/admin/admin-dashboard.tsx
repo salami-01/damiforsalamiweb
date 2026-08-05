@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Package, ClipboardList, FileText, Mail, Users, Menu, X, Tags, Percent } from 'lucide-react'
 import { AdminPromotions } from '@/components/admin/admin-promotions'
 import { AdminProducts } from '@/components/admin/admin-products'
@@ -20,14 +21,21 @@ const NAV: { id: Tab; label: string; icon: typeof Package }[] = [
   { id: 'users', label: 'Users', icon: Users },
   { id: 'categories', label: 'Categories', icon: Tags },
 ]
-
+const TAB_IDS = NAV.map((item) => item.id)
+function isTab(value: string | null): value is Tab {
+  return !!value && (TAB_IDS as string[]).includes(value)
+}
 export function AdminDashboard() {
-  const [tab, setTab] = useState<Tab>('products')
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const urlTab = searchParams.get('tab')
+  const [tab, setTab] = useState<Tab>(isTab(urlTab) ? urlTab : 'products')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   function selectTab(id: Tab) {
     setTab(id)
     setMobileMenuOpen(false)
+    router.replace(`/admin?tab=${id}`, { scroll: false })
   }
 
   return (

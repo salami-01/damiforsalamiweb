@@ -50,3 +50,4 @@ export function WishlistView() {
     </main>
   )
 }
+//this is components\wishlist-view.tsx

@@ -156,3 +156,4 @@
         </main>
     )
     }
+// this is app\privacy\page.tsx

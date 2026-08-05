@@ -1,5 +1,5 @@
 import { Resend } from 'resend'
-import { supabase } from '@/lib/supabase'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -10,6 +10,25 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Missing fields' }, { status: 400 })
   }
 
+  if (typeof name !== 'string' || typeof email !== 'string' || typeof message !== 'string') {
+    return Response.json({ error: 'Invalid field types' }, { status: 400 })
+  }
+
+  if (name.length > 100) {
+    return Response.json({ error: 'Name is too long' }, { status: 400 })
+  }
+  if (email.length > 254) {
+    return Response.json({ error: 'Email is too long' }, { status: 400 })
+  }
+  if (message.length > 5000) {
+    return Response.json({ error: 'Message is too long (5000 character limit)' }, { status: 400 })
+  }
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailPattern.test(email)) {
+    return Response.json({ error: 'Invalid email address' }, { status: 400 })
+  }
+  const supabase = createAdminClient()
   const { error: dbError } = await supabase
     .from('contact_messages')
     .insert({ name, email, message })
@@ -31,3 +50,4 @@ export async function POST(request: Request) {
 
   return Response.json({ success: true })
 }
+//this is app\api\contact\route.ts

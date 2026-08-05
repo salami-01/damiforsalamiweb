@@ -1,4 +1,4 @@
-export type OrderStatus = 'Processing' | 'Shipped' | 'Delivered'
+export type OrderStatus = 'Processing' | 'Shipped' | 'Delivered' | 'Refunded' | 'Cancelled'
 
 export type OrderLine = {
   name: string
@@ -18,7 +18,7 @@ export type Order = {
   items: OrderLine[]
 }
 
-export const ORDER_STATUSES: OrderStatus[] = ['Processing', 'Shipped', 'Delivered']
+export const ORDER_STATUSES: OrderStatus[] = ['Processing', 'Shipped', 'Delivered', 'Refunded', 'Cancelled']
 
 export const ORDERS: Order[] = [
   {
@@ -68,3 +68,4 @@ export const ORDERS: Order[] = [
     ],
   },
 ]
+// this is orders.ts file that defines the Order type, OrderLine type, and OrderStatus type. It also provides a sample list of orders for demonstration purposes.

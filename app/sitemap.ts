@@ -20,3 +20,4 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...productUrls,
   ]
 }
+// this is app\sitemap.ts

@@ -115,3 +115,4 @@ export function verifyWebhookSignature(rawBody: string, signature: string | null
   if (expectedBuf.length !== signatureBuf.length) return false
   return crypto.timingSafeEqual(expectedBuf, signatureBuf)
 }
+// this is paystack.ts file that provides functions to initialize and verify Paystack transactions, as well as validate webhook signatures. It uses the Paystack API and requires a secret key from environment variables.

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState,useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Heart, ShieldCheck, Truck, RotateCcw } from 'lucide-react'
 import { useCart } from '@/components/cart-context'
@@ -8,7 +8,7 @@ import { useWishlist } from '@/components/wishlist-context'
 import type { Product } from '@/lib/products'
 
 export function ProductDetailActions({ product }: { product: Product }) {
-  const { addItem } = useCart()
+  const { addItem, items } = useCart()
   const { isWishlisted, toggle: toggleWishlist } = useWishlist()
   const router = useRouter()
   const soldOut = product.stock === 0
@@ -17,6 +17,7 @@ export function ProductDetailActions({ product }: { product: Product }) {
   const [quantity, setQuantity] = useState(1)
   const [showSizeWarning, setShowSizeWarning] = useState(false)
   const wishlisted = isWishlisted(product.id)
+  const mountId = useRef(Math.random())
 
   if (soldOut) {
     return (
@@ -56,7 +57,17 @@ export function ProductDetailActions({ product }: { product: Product }) {
 
   function handleBuyNow() {
     if (!requireSize()) return
-    addItem(product, size!, quantity)
+
+    // If this exact product + size is already in the cart, don't add again (and don't
+    // touch its existing quantity) — just take the person straight to checkout with
+    // what's already there.
+    const alreadyInCart = items.some(
+      (i) => i.product.id === product.id && i.size === size,
+    )
+    if (!alreadyInCart) {
+      addItem(product, size!, quantity)
+    }
+
     router.push('/checkout')
   }
 
@@ -160,4 +171,4 @@ export function ProductDetailActions({ product }: { product: Product }) {
     </div>
   )
 }
-//this is product-detail-actions.tsx
+//this is components\product-detail-actions.tsx

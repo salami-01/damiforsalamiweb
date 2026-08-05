@@ -9,6 +9,7 @@ export function AdminCategories() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [newLabel, setNewLabel] = useState('')
+  const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
 
   const load = useCallback(async () => {
@@ -23,18 +24,34 @@ export function AdminCategories() {
 
   async function addCategory() {
     if (!newLabel.trim()) return
+    setError(null)
     const id = newLabel.trim().toLowerCase().replace(/\s+/g, '-')
-    await supabase.from('categories').insert({
+    const res = await fetch('/api/admin/categories', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
       id,
       label: newLabel.trim(),
       sort_order: categories.length + 1,
-    })
+    }),
+  })
+  if (!res.ok) {
+    const data = await res.json()
+    setError(data.error || 'Failed to add category.')
+    return
+  }
     setNewLabel('')
     load()
   }
 
   async function remove(id: string) {
-    await supabase.from('categories').delete().eq('id', id)
+    setError(null)
+    const res = await fetch(`/api/admin/categories/${id}`, { method: 'DELETE' })
+  if (!res.ok) {
+    const data = await res.json()
+    setError(data.error || 'Failed to delete category.')
+    return
+  }
     load()
   }
 
@@ -46,7 +63,11 @@ export function AdminCategories() {
       <p className="mt-1 text-sm text-muted-foreground">
         These appear in the shop filter dropdown.
       </p>
-
+      {error && (
+              <p className="mt-4 rounded-md bg-destructive/10 px-4 py-2 text-sm text-destructive">
+                {error}
+              </p>
+            )}
       <div className="mt-6 flex gap-2">
         <input
           value={newLabel}
@@ -81,3 +102,4 @@ export function AdminCategories() {
     </div>
   )
 }
+// components\admin\admin-categories.tsx

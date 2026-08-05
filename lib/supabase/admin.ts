@@ -7,3 +7,4 @@ export function createAdminClient() {
     { auth: { persistSession: false } },
   )
 }
+// this is lib\supabase\admin.ts

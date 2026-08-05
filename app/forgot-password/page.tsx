@@ -62,3 +62,4 @@ export default function ForgotPasswordPage() {
     </main>
   )
 }
+// this is app\forgot-password\page.tsx
