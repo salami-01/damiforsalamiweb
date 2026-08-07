@@ -22,16 +22,38 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         return NextResponse.json({ error: 'Invalid status.' }, { status: 400 })
     }
 
-  // Refunds carry side effects (stock restoration) that only refundPaystackOrder
-  // performs correctly — this route must never be the path that sets Refunded.
+    // Refunds carry side effects (stock restoration) that only refundPaystackOrder
+    // performs correctly — this route must never be the path that sets Refunded.
     if (status === 'Refunded') {
         return NextResponse.json(
         { error: 'Use /api/admin/refund-order to set Refunded status.' },
         { status: 400 },
         )
-    } 
+    }
 
     const supabase = createAdminClient()
+
+    // Once an order is refunded, stock has already been restored by refundPaystackOrder.
+    // A further status change here has no matching stock effect, so it would silently
+    // leave stock double-counted. Block it server-side — the disabled dropdown in the
+    // admin UI is only a client-side guard and doesn't stop a direct API call.
+    const { data: existing, error: fetchError } = await supabase
+        .from('orders')
+        .select('status')
+        .eq('id', id)
+        .maybeSingle()
+
+    if (fetchError || !existing) {
+        return NextResponse.json({ error: 'Order not found.' }, { status: 404 })
+    }
+
+    if (existing.status === 'Refunded') {
+        return NextResponse.json(
+        { error: 'This order has been refunded and its status cannot be changed further.' },
+        { status: 409 },
+        )
+    }
+
     const { error } = await supabase.from('orders').update({ status }).eq('id', id)
 
     if (error) {
@@ -40,4 +62,4 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     return NextResponse.json({ ok: true })
 }
-// this is app\api\admin\orders\[id]\status\route.ts
+//this is app/api/admin/orders/%5Bid%5D/status/route.ts
